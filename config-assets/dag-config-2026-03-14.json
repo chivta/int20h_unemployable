@@ -1,0 +1,187 @@
+{
+  "nodes": {
+    "2": {
+      "id": "2",
+      "type": "question",
+      "content": "",
+      "edges": []
+    },
+    "n_aj6gj8": {
+      "id": "n_aj6gj8",
+      "type": "question",
+      "content": "",
+      "edges": [
+        {
+          "match_value": "+",
+          "actions": [],
+          "to_node_id": "2"
+        }
+      ]
+    },
+    "start": {
+      "id": "start",
+      "type": "question",
+      "content": "???",
+      "edges": [
+        {
+          "match_value": "+",
+          "actions": [
+            {
+              "type": "delta",
+              "field_name": "Age",
+              "value": 100
+            }
+          ],
+          "to_node_id": "n_aj6gj8"
+        }
+      ]
+    }
+  },
+  "offers": {
+    "offer_1": {
+      "id": "offer_1",
+      "name": "Weight Loss Starter (Home) — 4 тижні",
+      "description": "Digital: план схуднення вдома (20–30 хв)\nPhysical wellness kit: Home Fat-Burn Kit (resistance bands, скакалка, шейкер/пляшка, електроліти + healthy snack)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "weight_loss",
+          "is_obligatory": true,
+          "score": 10
+        },
+        {
+          "field_name": "context",
+          "match_value": "home",
+          "is_obligatory": false,
+          "score": 5
+        }
+      ]
+    },
+    "offer_2": {
+      "id": "offer_2",
+      "name": "Lean Strength Builder (Gym) — силові + прогресія",
+      "description": "Digital: програма для залу\nPhysical wellness kit: Gym Support Kit (wrist wraps/straps, mini loop band, компактний рушник, електроліти/протеїн-снек)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "strength",
+          "is_obligatory": true,
+          "score": 10
+        },
+        {
+          "field_name": "context",
+          "match_value": "gym",
+          "is_obligatory": false,
+          "score": 5
+        }
+      ]
+    },
+    "offer_3": {
+      "id": "offer_3",
+      "name": "Low-Impact Fat Burn — “суглоби friendly”",
+      "description": "Digital: low-impact план (коліна/спина friendly)\nPhysical wellness kit: Joint-Friendly Kit (knee sleeve/бандаж, massage ball, mini loop bands, cooling patch/recovery gel)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "weight_loss",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "constraints",
+          "match_value": "injury",
+          "is_obligatory": true,
+          "score": 10
+        }
+      ]
+    },
+    "offer_4": {
+      "id": "offer_4",
+      "name": "Run Your First 5K (Outdoor) — бігова програма",
+      "description": "Digital: підготовка до 5K (3 рази/тиж)\nPhysical wellness kit: Runner Starter Kit (electrolytes, reflective armband/safety light, blister kit, running belt)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "endurance",
+          "is_obligatory": true,
+          "score": 10
+        },
+        {
+          "field_name": "context",
+          "match_value": "outdoor",
+          "is_obligatory": false,
+          "score": 5
+        }
+      ]
+    },
+    "offer_5": {
+      "id": "offer_5",
+      "name": "Yoga & Mobility (Home) — гнучкість + спина/постава",
+      "description": "Digital: йога/мобільність 10–25 хв\nPhysical wellness kit: Mobility Kit (travel yoga mat або yoga strap, massage ball, mini foam roller)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "flexibility",
+          "is_obligatory": true,
+          "score": 10
+        },
+        {
+          "field_name": "preferences",
+          "match_value": "yoga",
+          "is_obligatory": false,
+          "score": 5
+        }
+      ]
+    },
+    "offer_6": {
+      "id": "offer_6",
+      "name": "Stress Reset Program — ментальний ресет + мікрозвички",
+      "description": "Digital: дихання/медитації/антистрес рутини\nPhysical wellness kit: Calm-Now Kit (eye mask, aroma roll-on/mini candle, tea sticks, stress ball/fidget, quick reset card)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "stress_relief",
+          "is_obligatory": true,
+          "score": 10
+        },
+        {
+          "field_name": "wellbeing",
+          "match_value": "poor",
+          "is_obligatory": false,
+          "score": 5
+        }
+      ]
+    },
+    "offer_7": {
+      "id": "offer_7",
+      "name": "Quick Fit Micro-Workouts — 10–15 хв щодня",
+      "description": "Digital: короткі щоденні тренування\nPhysical wellness kit: Micro-Workout Kit (slider discs, mini loop bands, шейкер/пляшка, mini routine card)",
+      "requirements": [
+        {
+          "field_name": "constraints",
+          "match_value": "time",
+          "is_obligatory": true,
+          "score": 10
+        }
+      ]
+    }
+  },
+  "layout": {
+    "2": {
+      "x": 652.197371003793,
+      "y": 502.59312748267337
+    },
+    "3": {
+      "x": 445,
+      "y": 372
+    },
+    "start": {
+      "x": 68,
+      "y": 163
+    },
+    "n_aj6gj8": {
+      "x": 318.1973710037931,
+      "y": 365.59312748267337
+    }
+  }
+}

@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/chivta/int20h_unemployable/internal/actions"
+	"github.com/chivta/int20h_unemployable/internal/database"
 	"github.com/chivta/int20h_unemployable/internal/models"
 	"github.com/chivta/int20h_unemployable/internal/store"
 )
@@ -11,6 +15,7 @@ import (
 // AdminHandler holds the store reference for admin endpoints.
 type AdminHandler struct {
 	Store *store.Store
+	DB    database.DB
 }
 
 // ListActionTypes returns all registered action types.
@@ -89,7 +94,7 @@ func (h *AdminHandler) ExportConfig(c *fiber.Ctx) error {
 	return c.JSON(cfg)
 }
 
-// ImportConfig completely overwrites existing nodes and offers
+// ImportConfig completely overwrites existing nodes and offers, and saves a version snapshot.
 func (h *AdminHandler) ImportConfig(c *fiber.Ctx) error {
 	var cfg models.Config
 	if err := c.BodyParser(&cfg); err != nil {
@@ -97,5 +102,47 @@ func (h *AdminHandler) ImportConfig(c *fiber.Ctx) error {
 	}
 
 	h.Store.ImportConfig(cfg)
-	return c.JSON(fiber.Map{"status": "success", "message": "Configuration successfully imported"})
+
+	// Persist config version to DB
+	resp := fiber.Map{"status": "success", "message": "Configuration successfully imported"}
+	if h.DB != nil {
+		cfgJSON, err := json.Marshal(cfg)
+		if err == nil {
+			version, err := h.DB.SaveConfigVersion(cfgJSON)
+			if err == nil {
+				resp["config_version"] = version
+			}
+		}
+	}
+
+	return c.JSON(resp)
+}
+
+// ListConfigVersions returns all stored config version metadata.
+func (h *AdminHandler) ListConfigVersions(c *fiber.Ctx) error {
+	if h.DB == nil {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "database not available"})
+	}
+	versions, err := h.DB.ListConfigVersions()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to list versions"})
+	}
+	return c.JSON(versions)
+}
+
+// GetConfigVersion returns a specific config version by its version number.
+func (h *AdminHandler) GetConfigVersion(c *fiber.Ctx) error {
+	if h.DB == nil {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "database not available"})
+	}
+	vStr := c.Params("version")
+	v, err := strconv.Atoi(vStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid version number"})
+	}
+	cv, err := h.DB.GetConfigVersion(v)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "version not found"})
+	}
+	return c.JSON(cv)
 }

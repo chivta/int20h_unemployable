@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: fitness
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d fitness"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./be
+    depends_on:
+      db:
+        condition: service_healthy
+
+    environment:
+      DATABASE_URL: postgres://app:secret@db:5432/fitness?sslmode=disable
+      CONFIG_PATH: /config-assets/dag-config-2026-03-14.json
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config-assets:/config-assets
+
+  #frontend:
+  #  build:
+  #    context: ./fe
+  #    target: dev
+  #  depends_on:
+  #    - backend
+  #  environment:
+  #    VITE_API_PROXY_TARGET: http://backend:8080
+  #  ports:
+  #    - "5173:5173"
+  #  command:
+  #    - sh
+  #    - -c
+  #    - npm install --legacy-peer-deps && npm install --no-save @rollup/rollup-linux-x64-musl @rollup/rollup-linux-arm64-musl && npm run dev -- --host
+  #  volumes:
+  #    - ./frontend:/app
+  #    - frontend_node_modules:/app/node_modules
+
+volumes:
+  pgdata:
+  #frontend_node_modules:

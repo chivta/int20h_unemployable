@@ -15,7 +15,7 @@ type UserData struct {
 	Level       string `json:"level" enum:"beginner,intermediate,advanced"`
 	Motivation  string `json:"motivation" enum:"health,appearance,energy"`
 	Preferences string `json:"preferences" enum:"cardio,strength,yoga"`
-	Wellbeing   string `json:"wellbeing" enum:"good,okay,poor"`
+	Wellbeing   string `json:"wellbeing" enum:"high,mid,low"`
 }
 
 // FieldSchema describes a field for the frontend editor
