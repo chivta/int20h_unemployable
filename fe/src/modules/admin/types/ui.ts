@@ -7,5 +7,3 @@ export type SelectionState =
   | { type: 'none' }
   | { type: 'node'; nodeId: string }
   | { type: 'edge'; edgeId: string }
-
-export type SidebarMode = 'none' | 'node' | 'edge'

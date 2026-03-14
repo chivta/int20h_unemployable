@@ -4,9 +4,7 @@
     "question": "What is your primary fitness goal?",
     "variable": "fitness_goal",
     "options": [
-      { "label": "Lose weight", "value": "lose_weight", "next_id": "q2" },
-      { "label": "Build muscle", "value": "build_muscle", "next_id": "offer-2" },
-      { "label": "Improve endurance", "value": "endurance", "next_id": "q2" }
+      { "label": "Lose weight", "value": "lose_weight", "next_id": "q2" }
     ]
   },
   "q2": {
@@ -14,17 +12,15 @@
     "question": "How many days per week can you train?",
     "variable": "training_days",
     "options": [
-      { "label": "1-2 days", "value": "low", "next_id": "offer-1" },
-      { "label": "3-4 days", "value": "medium", "next_id": "offer-1" },
-      { "label": "5+ days", "value": "high", "next_id": "offer-2" }
+      { "label": "3+ days", "value": "high", "next_id": "q3" }
     ]
   },
-  "offer-1": {
-    "type": "OFFER",
-    "offer_id": "WLP-001"
-  },
-  "offer-2": {
-    "type": "OFFER",
-    "offer_id": "MBP-001"
+  "q3": {
+    "type": "QUESTION",
+    "question": "Do you have access to a gym?",
+    "variable": "has_gym",
+    "options": [
+      { "label": "Yes", "value": "yes", "next_id": null }
+    ]
   }
 }
