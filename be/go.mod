@@ -1,4 +1,4 @@
-module github.com/deu/hack
+module github.com/chivta/int20h_unemployable
 
 go 1.21
 

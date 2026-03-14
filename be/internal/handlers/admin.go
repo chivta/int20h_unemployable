@@ -3,9 +3,9 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/deu/hack/internal/actions"
-	"github.com/deu/hack/internal/models"
-	"github.com/deu/hack/internal/store"
+	"github.com/chivta/int20h_unemployable/internal/actions"
+	"github.com/chivta/int20h_unemployable/internal/models"
+	"github.com/chivta/int20h_unemployable/internal/store"
 )
 
 // AdminHandler holds the store reference for admin endpoints.
@@ -51,4 +51,51 @@ func (h *AdminHandler) DeleteNode(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "node not found"})
 	}
 	return c.JSON(fiber.Map{"deleted": id})
+}
+
+// ListOffers returns all Offers.
+func (h *AdminHandler) ListOffers(c *fiber.Ctx) error {
+	return c.JSON(h.Store.GetAllOffers())
+}
+
+// SaveOffer creates or updates an Offer.
+func (h *AdminHandler) SaveOffer(c *fiber.Ctx) error {
+	var o models.Offer
+	if err := c.BodyParser(&o); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON"})
+	}
+	if o.ID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "offer id is required"})
+	}
+	h.Store.SaveOffer(o)
+	return c.Status(fiber.StatusCreated).JSON(o)
+}
+
+// DeleteOffer removes an Offer by ID.
+func (h *AdminHandler) DeleteOffer(c *fiber.Ctx) error {
+	id := c.Query("id")
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id parameter required"})
+	}
+	if !h.Store.DeleteOffer(id) {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "offer not found"})
+	}
+	return c.JSON(fiber.Map{"deleted": id})
+}
+
+// ExportConfig returns the entire backend config state (nodes + offers)
+func (h *AdminHandler) ExportConfig(c *fiber.Ctx) error {
+	cfg := h.Store.ExportConfig()
+	return c.JSON(cfg)
+}
+
+// ImportConfig completely overwrites existing nodes and offers
+func (h *AdminHandler) ImportConfig(c *fiber.Ctx) error {
+	var cfg models.Config
+	if err := c.BodyParser(&cfg); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON config format"})
+	}
+
+	h.Store.ImportConfig(cfg)
+	return c.JSON(fiber.Map{"status": "success", "message": "Configuration successfully imported"})
 }

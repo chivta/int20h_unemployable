@@ -7,8 +7,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
-	"github.com/deu/hack/internal/handlers"
-	"github.com/deu/hack/internal/store"
+	"github.com/chivta/int20h_unemployable/internal/handlers"
+	"github.com/chivta/int20h_unemployable/internal/store"
 )
 
 func main() {
@@ -31,15 +31,21 @@ func main() {
 	admin.Delete("/nodes", adminHandler.DeleteNode)
 	admin.Get("/action-types", adminHandler.ListActionTypes)
 	admin.Get("/field-schema", adminHandler.ListFieldSchema)
+	admin.Get("/offers", adminHandler.ListOffers)
+	admin.Post("/offers", adminHandler.SaveOffer)
+	admin.Delete("/offers", adminHandler.DeleteOffer)
+	admin.Get("/config", adminHandler.ExportConfig)
+	admin.Post("/config", adminHandler.ImportConfig)
 
 	// User API
 	user := app.Group("/api/user")
 	user.Get("/process", userHandler.GetState)
 	user.Post("/process", userHandler.Process)
 	user.Post("/reset", userHandler.Reset)
+	user.Get("/recommendations", userHandler.GetRecommendations)
 
 	// Static files
-	app.Static("/", "./static")
+	app.Static("/", "../fe/static")
 
 	addr := ":8080"
 	fmt.Printf("🚀 Server started at http://localhost%s\n", addr)

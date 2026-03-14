@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/deu/hack/internal/models"
+	"github.com/chivta/int20h_unemployable/internal/models"
 )
 
 // Applier is a function that applies a single action to a reflect.Value field.
@@ -74,6 +74,10 @@ func ApplySet(field reflect.Value, action models.Action) {
 	case reflect.Bool:
 		if b, ok := action.Value.(bool); ok {
 			field.SetBool(b)
+		}
+	case reflect.String:
+		if s, ok := action.Value.(string); ok {
+			field.SetString(s)
 		}
 	}
 }

@@ -3,7 +3,8 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/deu/hack/internal/store"
+	"github.com/chivta/int20h_unemployable/internal/engine"
+	"github.com/chivta/int20h_unemployable/internal/store"
 )
 
 // UserHandler holds the store reference for user endpoints.
@@ -63,5 +64,17 @@ func (h *UserHandler) Reset(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"node": startNode,
 		"user": userState,
+	})
+}
+
+// GetRecommendations returns the calculated tier list of offers for the user.
+func (h *UserHandler) GetRecommendations(c *fiber.Ctx) error {
+	userState := h.Store.GetUserState()
+	offers := h.Store.GetAllOffers()
+	
+	results := engine.CalculateRecommendations(userState, offers)
+	
+	return c.JSON(fiber.Map{
+		"results": results,
 	})
 }
