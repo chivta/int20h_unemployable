@@ -1,0 +1,66 @@
+{
+  "flows": [
+    {
+      "id": "flow-1",
+      "name": "Fitness Questionnaire",
+      "graph": {
+        "nodes": [
+          {
+            "id": "q1",
+            "type": "question",
+            "position": { "x": 100, "y": 100 },
+            "data": {
+              "label": "What is your primary fitness goal?",
+              "variable": "fitness_goal",
+              "options": [
+                { "id": "q1-opt1", "text": "Lose weight", "value": "lose_weight" },
+                { "id": "q1-opt2", "text": "Build muscle", "value": "build_muscle" },
+                { "id": "q1-opt3", "text": "Improve endurance", "value": "endurance" }
+              ]
+            }
+          },
+          {
+            "id": "q2",
+            "type": "question",
+            "position": { "x": 450, "y": 50 },
+            "data": {
+              "label": "How many days per week can you train?",
+              "variable": "training_days",
+              "options": [
+                { "id": "q2-opt1", "text": "1-2 days", "value": "low" },
+                { "id": "q2-opt2", "text": "3-4 days", "value": "medium" },
+                { "id": "q2-opt3", "text": "5+ days", "value": "high" }
+              ]
+            }
+          },
+          {
+            "id": "offer-1",
+            "type": "offer",
+            "position": { "x": 850, "y": 100 },
+            "data": {
+              "label": "Weight Loss Program",
+              "offer_id": "WLP-001"
+            }
+          },
+          {
+            "id": "offer-2",
+            "type": "offer",
+            "position": { "x": 850, "y": 300 },
+            "data": {
+              "label": "Muscle Builder Program",
+              "offer_id": "MBP-001"
+            }
+          }
+        ],
+        "edges": [
+          { "id": "e1", "source": "q1", "sourceHandle": "q1-opt1", "target": "q2" },
+          { "id": "e2", "source": "q1", "sourceHandle": "q1-opt2", "target": "offer-2" },
+          { "id": "e3", "source": "q1", "sourceHandle": "q1-opt3", "target": "q2" },
+          { "id": "e4", "source": "q2", "sourceHandle": "q2-opt1", "target": "offer-1" },
+          { "id": "e5", "source": "q2", "sourceHandle": "q2-opt2", "target": "offer-1" },
+          { "id": "e6", "source": "q2", "sourceHandle": "q2-opt3", "target": "offer-2" }
+        ]
+      }
+    }
+  ]
+}
