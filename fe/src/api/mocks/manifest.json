@@ -1,0 +1,30 @@
+{
+  "q1": {
+    "type": "QUESTION",
+    "question": "What is your primary fitness goal?",
+    "variable": "fitness_goal",
+    "options": [
+      { "label": "Lose weight", "value": "lose_weight", "next_id": "q2" },
+      { "label": "Build muscle", "value": "build_muscle", "next_id": "offer-2" },
+      { "label": "Improve endurance", "value": "endurance", "next_id": "q2" }
+    ]
+  },
+  "q2": {
+    "type": "QUESTION",
+    "question": "How many days per week can you train?",
+    "variable": "training_days",
+    "options": [
+      { "label": "1-2 days", "value": "low", "next_id": "offer-1" },
+      { "label": "3-4 days", "value": "medium", "next_id": "offer-1" },
+      { "label": "5+ days", "value": "high", "next_id": "offer-2" }
+    ]
+  },
+  "offer-1": {
+    "type": "OFFER",
+    "offer_id": "WLP-001"
+  },
+  "offer-2": {
+    "type": "OFFER",
+    "offer_id": "MBP-001"
+  }
+}
