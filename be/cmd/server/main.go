@@ -1,0 +1,49 @@
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+
+	"github.com/deu/hack/internal/handlers"
+	"github.com/deu/hack/internal/store"
+)
+
+func main() {
+	s := store.New()
+
+	adminHandler := &handlers.AdminHandler{Store: s}
+	userHandler := &handlers.UserHandler{Store: s}
+
+	app := fiber.New(fiber.Config{
+		AppName: "DAG Questionnaire",
+	})
+
+	// CORS middleware
+	app.Use(cors.New())
+
+	// Admin API
+	admin := app.Group("/api/admin")
+	admin.Get("/nodes", adminHandler.ListNodes)
+	admin.Post("/nodes", adminHandler.SaveNode)
+	admin.Delete("/nodes", adminHandler.DeleteNode)
+	admin.Get("/action-types", adminHandler.ListActionTypes)
+	admin.Get("/field-schema", adminHandler.ListFieldSchema)
+
+	// User API
+	user := app.Group("/api/user")
+	user.Get("/process", userHandler.GetState)
+	user.Post("/process", userHandler.Process)
+	user.Post("/reset", userHandler.Reset)
+
+	// Static files
+	app.Static("/", "./static")
+
+	addr := ":8080"
+	fmt.Printf("🚀 Server started at http://localhost%s\n", addr)
+	fmt.Println("   Admin:  http://localhost:8080/admin.html")
+	fmt.Println("   User:   http://localhost:8080/index.html")
+	log.Fatal(app.Listen(addr))
+}
