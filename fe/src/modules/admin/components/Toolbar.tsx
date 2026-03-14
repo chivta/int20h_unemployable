@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { PlusCircle, Upload, Download, RotateCcw, RefreshCw } from 'lucide-react'
+import { PlusCircle, Upload, Download } from 'lucide-react'
 import { useAppContext } from '../state/context'
 import { Button } from '../../../shared/components/Button'
 import { loadJson, saveJson } from '../utils/fileio'
@@ -48,18 +48,6 @@ export function Toolbar() {
         <Download size={14} /> Save JSON
       </Button>
 
-      <Button size="sm" variant="ghost" onClick={() => dispatch({ type: 'RECOMPUTE_LAYOUT' })} title="Re-run layout">
-        <RefreshCw size={14} />
-      </Button>
-
-      <Button
-        size="sm"
-        variant="ghost"
-        className="ml-auto text-red-600 hover:bg-red-50"
-        onClick={() => { if (confirm('Reset to default? All changes will be lost.')) dispatch({ type: 'RESET' }) }}
-      >
-        <RotateCcw size={14} /> Reset
-      </Button>
     </div>
   )
 }

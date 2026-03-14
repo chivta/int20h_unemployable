@@ -1,6 +1,13 @@
 import { useCallback, useMemo, useState, useEffect } from 'react'
-import { ReactFlow, Background, Controls, BackgroundVariant, MarkerType, applyNodeChanges } from '@xyflow/react'
-import type { NodeChange, Node, Edge } from '@xyflow/react'
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  BackgroundVariant,
+  MarkerType,
+  applyNodeChanges,
+} from '@xyflow/react'
+import type { NodeChange, Node, Edge, Connection } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useAppContext } from '../state/context'
 import { QuestionNode } from './nodes/QuestionNode'
@@ -13,25 +20,24 @@ const edgeTypes = { custom: CustomEdge }
 
 export function FlowCanvas() {
   const { state, dispatch } = useAppContext()
-  const { app, positions, selection } = state
-
+  const { app, positions } = state
   const computedNodes: Node<QuestionRFData>[] = useMemo(() => {
     return Object.values(app.dag.nodes).map(node => ({
       id: node.id,
       type: 'question',
       position: positions[node.id] ?? { x: 0, y: 0 },
-      selected: selection.type === 'node' && selection.nodeId === node.id,
       data: {
         id: node.id,
         text: node.text,
         answers: node.answers.map(edgeId => ({
           edgeId,
           label: app.dag.edges[edgeId]?.label ?? edgeId,
+          hasNext: !!app.dag.edges[edgeId]?.next,
         })),
         isRoot: app.dag.root === node.id,
       },
     }))
-  }, [app.dag, positions, selection])
+  }, [app.dag, positions])
 
   const [rfNodes, setRfNodes] = useState<Node<QuestionRFData>[]>(computedNodes)
 
@@ -59,8 +65,8 @@ export function FlowCanvas() {
     return result
   }, [app.dag])
 
-  const onNodesChange = useCallback((changes: NodeChange<Node<QuestionRFData>>[]) => {
-    setRfNodes(nds => applyNodeChanges(changes, nds))
+  const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
+    setRfNodes(nds => applyNodeChanges(changes, nds) as Node<QuestionRFData>[])
     for (const change of changes) {
       if (change.type === 'position' && change.position && !change.dragging) {
         dispatch({ type: 'SET_NODE_POSITION', nodeId: change.id, position: change.position })
@@ -68,12 +74,10 @@ export function FlowCanvas() {
     }
   }, [dispatch])
 
-  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    dispatch({ type: 'SELECT_NODE', nodeId: node.id })
-  }, [dispatch])
-
-  const onPaneClick = useCallback(() => {
-    dispatch({ type: 'DESELECT' })
+  const onConnect = useCallback((connection: Connection) => {
+    if (connection.sourceHandle && connection.target) {
+      dispatch({ type: 'SET_ANSWER_NEXT', edgeId: connection.sourceHandle, next: connection.target })
+    }
   }, [dispatch])
 
   return (
@@ -84,8 +88,7 @@ export function FlowCanvas() {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
-        onNodeClick={onNodeClick}
-        onPaneClick={onPaneClick}
+        onConnect={onConnect}
         fitView
         deleteKeyCode={null}
       >

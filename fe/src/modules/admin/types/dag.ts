@@ -8,18 +8,18 @@ export interface DagEdge {
   id: string
   label: string
   next: string | null // target node ID, null = terminal
-  weights: Record<string, number> // offer id -> score delta
-}
-
-export interface Offer {
-  id: string
-  name: string
+  weights: Record<string, number>
 }
 
 export interface DagData {
   root: string
   nodes: Record<string, DagNode>
   edges: Record<string, DagEdge>
+}
+
+export interface Offer {
+  id: string
+  name: string
 }
 
 export interface AppState {

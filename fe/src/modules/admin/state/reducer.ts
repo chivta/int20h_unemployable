@@ -17,46 +17,13 @@ function makeInitialApp(): AppState {
     dag: {
       root: 'q1',
       nodes: {
-        q1: { id: 'q1', text: 'What is your primary fitness goal?', answers: ['a1', 'a2', 'a3'] },
-        q2: { id: 'q2', text: 'How many days per week can you train?', answers: ['a4', 'a5', 'a6'] },
-        q3: { id: 'q3', text: 'What is your current fitness level?', answers: ['a7', 'a8', 'a9'] },
-        q4: { id: 'q4', text: 'Do you have access to a gym?', answers: ['a10', 'a11'] },
-        q5: { id: 'q5', text: 'How much time can you dedicate per session?', answers: ['a12', 'a13', 'a14'] },
-        q6: { id: 'q6', text: 'Do you have any dietary restrictions?', answers: ['a15', 'a16', 'a17'] },
-        q7: { id: 'q7', text: 'What is your age group?', answers: ['a18', 'a19', 'a20'] },
-        q8: { id: 'q8', text: 'Have you worked with a personal trainer before?', answers: ['a21', 'a22'] },
+        q1: { id: 'q1', text: 'What is your primary fitness goal?', answers: ['a1'] },
+        q2: { id: 'q2', text: 'How many days per week can you train?', answers: ['a2'] },
+        q3: { id: 'q3', text: 'Do you have access to a gym?', answers: [] },
       },
       edges: {
-        // q1 branches
-        a1: { id: 'a1', label: 'Lose weight', next: 'q2', weights: { starter: 2, premium: 1 } },
-        a2: { id: 'a2', label: 'Build muscle', next: 'q3', weights: { starter: 1, premium: 3 } },
-        a3: { id: 'a3', label: 'Improve endurance', next: 'q4', weights: { starter: 1, premium: 2 } },
-        // q2 branches
-        a4: { id: 'a4', label: '1–2 days', next: 'q5', weights: { starter: 3, premium: 0 } },
-        a5: { id: 'a5', label: '3–4 days', next: 'q5', weights: { starter: 2, premium: 2 } },
-        a6: { id: 'a6', label: '5+ days', next: 'q6', weights: { starter: 0, premium: 3 } },
-        // q3 branches
-        a7: { id: 'a7', label: 'Beginner', next: 'q4', weights: { starter: 3, premium: 0 } },
-        a8: { id: 'a8', label: 'Intermediate', next: 'q5', weights: { starter: 1, premium: 2 } },
-        a9: { id: 'a9', label: 'Advanced', next: 'q6', weights: { starter: 0, premium: 3 } },
-        // q4 branches
-        a10: { id: 'a10', label: 'Yes, full gym', next: 'q7', weights: { starter: 0, premium: 3 } },
-        a11: { id: 'a11', label: 'Home only', next: 'q5', weights: { starter: 3, premium: 0 } },
-        // q5 branches
-        a12: { id: 'a12', label: 'Under 30 min', next: 'q8', weights: { starter: 2, premium: 0 } },
-        a13: { id: 'a13', label: '30–60 min', next: 'q6', weights: { starter: 1, premium: 2 } },
-        a14: { id: 'a14', label: 'Over 60 min', next: 'q7', weights: { starter: 0, premium: 3 } },
-        // q6 branches
-        a15: { id: 'a15', label: 'None', next: 'q8', weights: { starter: 1, premium: 2 } },
-        a16: { id: 'a16', label: 'Vegetarian / vegan', next: 'q7', weights: { starter: 2, premium: 1 } },
-        a17: { id: 'a17', label: 'Gluten-free', next: 'q8', weights: { starter: 2, premium: 1 } },
-        // q7 branches
-        a18: { id: 'a18', label: '18–30', next: 'q8', weights: { starter: 1, premium: 2 } },
-        a19: { id: 'a19', label: '31–50', next: 'q8', weights: { starter: 2, premium: 1 } },
-        a20: { id: 'a20', label: '51+', next: 'q8', weights: { starter: 3, premium: 0 } },
-        // q8 branches (terminal)
-        a21: { id: 'a21', label: 'Yes', next: null, weights: { starter: 0, premium: 3 } },
-        a22: { id: 'a22', label: 'No', next: null, weights: { starter: 2, premium: 1 } },
+        a1: { id: 'a1', label: 'Next', next: 'q2', weights: { starter: 1, premium: 1 } },
+        a2: { id: 'a2', label: 'Next', next: 'q3', weights: { starter: 1, premium: 1 } },
       },
     },
     offers: {
@@ -104,14 +71,15 @@ export function reducer(state: FullState, action: Action): FullState {
     case 'ADD_NODE': {
       const id = nextNodeId()
       const n = Object.keys(state.app.dag.nodes).length
+      const pos = action.position ?? { x: 80 + (n % 4) * 260, y: 80 + Math.floor(n / 4) * 160 }
       const dag: DagData = {
         ...state.app.dag,
-        nodes: { ...state.app.dag.nodes, [id]: { id, text: 'New Question', answers: [] } },
+        nodes: { ...state.app.dag.nodes, [id]: { id, text: '', answers: [] } },
       }
       return {
         ...state,
         app: { ...state.app, dag },
-        positions: { ...state.positions, [id]: { x: 50, y: 50 + n * 120 } },
+        positions: { ...state.positions, [id]: pos },
         selection: { type: 'node', nodeId: id },
       }
     }
