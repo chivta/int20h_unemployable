@@ -14,12 +14,12 @@ import '@xyflow/react/dist/style.css'
 import { useAppContext } from '../state/context'
 import { QuestionNode } from './nodes/QuestionNode'
 import type { QuestionRFData } from './nodes/QuestionNode'
-import { RootNode } from './nodes/RootNode'
-import { EndNode } from './nodes/EndNode'
+import { FinishNode } from './nodes/FinishNode'
+import { InfoNode } from './nodes/InfoNode'
 import { CustomEdge } from './edges/CustomEdge'
 import type { CustomEdgeData } from './edges/CustomEdge'
 
-const nodeTypes = { questionNode: QuestionNode, rootNode: RootNode, endNode: EndNode }
+const nodeTypes = { questionNode: QuestionNode, finishNode: FinishNode, infoNode: InfoNode }
 const edgeTypes = { custom: CustomEdge }
 
 type ContextMenuState =
@@ -34,6 +34,8 @@ function ContextMenu({
   onRemoveNode,
   onRemoveEdge,
   onAddNode,
+  onAddFinishNode,
+  onAddInfoNode,
   onSelectEdge,
 }: {
   menu: ContextMenuState
@@ -41,6 +43,8 @@ function ContextMenu({
   onRemoveNode: (nodeId: string) => void
   onRemoveEdge: (edgeId: string) => void
   onAddNode: (x: number, y: number) => void
+  onAddFinishNode: (x: number, y: number) => void
+  onAddInfoNode: (x: number, y: number) => void
   onSelectEdge: (edgeId: string) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -84,12 +88,26 @@ function ContextMenu({
       )}
 
       {menu.kind === 'pane' && (
-        <button
-          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-          onClick={() => { onAddNode(menu.flowX, menu.flowY); onClose() }}
-        >
-          Add node
-        </button>
+        <>
+          <button
+            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            onClick={() => { onAddNode(menu.flowX, menu.flowY); onClose() }}
+          >
+            Add question node
+          </button>
+          <button
+            className="w-full text-left px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 transition-colors"
+            onClick={() => { onAddInfoNode(menu.flowX, menu.flowY); onClose() }}
+          >
+            Add info node
+          </button>
+          <button
+            className="w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
+            onClick={() => { onAddFinishNode(menu.flowX, menu.flowY); onClose() }}
+          >
+            Add finish node
+          </button>
+        </>
       )}
     </div>
   )
@@ -104,8 +122,9 @@ function FlowCanvasInner() {
   const computedNodes: Node<QuestionRFData>[] = useMemo(() => {
     return Object.values(app.dag.nodes).map(node => {
       const isRoot = app.dag.root === node.id
-      const isEnd = app.dag.end === node.id
-      const type = isRoot ? 'rootNode' : isEnd ? 'endNode' : 'questionNode'
+      const isFinish = node.nodeType === 'finish'
+      const isInfo = node.nodeType === 'info'
+      const type = isFinish ? 'finishNode' : isInfo ? 'infoNode' : 'questionNode'
       return {
         id: node.id,
         type,
@@ -120,6 +139,7 @@ function FlowCanvasInner() {
           })),
           questionType: node.questionType ?? 'single',
           nextNodeId: node.nextNodeId ?? null,
+          isRoot,
         },
       }
     })
@@ -136,9 +156,9 @@ function FlowCanvasInner() {
   const rfEdges: Edge<CustomEdgeData>[] = useMemo(() => {
     const result: Edge<CustomEdgeData>[] = []
     for (const node of Object.values(app.dag.nodes)) {
-      const isRoot = app.dag.root === node.id
-      if (isRoot || (node.questionType ?? 'single') === 'multi') {
-        // Root and multi-choice: single outgoing edge via 'out' handle using nextNodeId
+      if (node.nodeType === 'finish') continue // finish nodes have no outgoing edges
+      if (node.nodeType === 'info' || (node.questionType ?? 'single') === 'multi') {
+        // Info and multi-choice: single outgoing edge via 'out' handle using nextNodeId
         if (node.nextNodeId) {
           result.push({
             id: `${node.id}-out`,
@@ -233,6 +253,14 @@ function FlowCanvasInner() {
     dispatch({ type: 'ADD_NODE', position: { x, y } })
   }, [dispatch])
 
+  const handleAddFinishNode = useCallback((x: number, y: number) => {
+    dispatch({ type: 'ADD_FINISH_NODE', position: { x, y } })
+  }, [dispatch])
+
+  const handleAddInfoNode = useCallback((x: number, y: number) => {
+    dispatch({ type: 'ADD_INFO_NODE', position: { x, y } })
+  }, [dispatch])
+
   const handleSelectEdge = useCallback((edgeId: string) => {
     dispatch({ type: 'SELECT_EDGE', edgeId })
   }, [dispatch])
@@ -264,6 +292,8 @@ function FlowCanvasInner() {
         onRemoveNode={handleRemoveNode}
         onRemoveEdge={handleRemoveEdge}
         onAddNode={handleAddNode}
+        onAddFinishNode={handleAddFinishNode}
+        onAddInfoNode={handleAddInfoNode}
         onSelectEdge={handleSelectEdge}
       />
 

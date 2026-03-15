@@ -1,0 +1,612 @@
+{
+  "root": "77",
+  "nodes": {
+    "3": {
+      "id": "3",
+      "type": "question",
+      "content": "Чи є щось, що насправді тебе стримує?",
+      "edges": [
+        {
+          "match_value": "Жодних перешкод, готовий(а) до навантажень.",
+          "to_node_id": "4",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "constraints",
+              "value": "none"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Брак часу (треба Micro-workouts)",
+          "to_node_id": "11",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "constraints",
+              "value": "time"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Біль у колінах чи спині (потрібен Low-Impact)",
+          "to_node_id": "q15",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "constraints",
+              "value": "injury"
+            },
+            {
+              "type": "set",
+              "field_name": "goal",
+              "value": "health"
+            }
+          ],
+          "weights": {}
+        }
+      ]
+    },
+    "4": {
+      "id": "4",
+      "type": "question",
+      "content": "Де ти почуваєшся найбільш комфортно під час активності?",
+      "edges": [
+        {
+          "match_value": "Тільки вдома (мінімум обладнання)",
+          "to_node_id": "6",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "context",
+              "value": "home"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "У залі (люблю залізо)😎",
+          "to_node_id": "q15",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "context",
+              "value": "gym"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "На вулиці (свіже повітря)",
+          "to_node_id": "6",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "context",
+              "value": "outdoor"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Будь-де, аби це було швидко.",
+          "to_node_id": "q15",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "constraints",
+              "value": "time"
+            }
+          ],
+          "weights": {}
+        }
+      ]
+    },
+    "5": {
+      "id": "5",
+      "type": "finish",
+      "content": "",
+      "edges": []
+    },
+    "6": {
+      "id": "6",
+      "type": "question",
+      "content": "Заради якого результату ти готовий(а) докладати зусиль?",
+      "edges": [
+        {
+          "match_value": "Вау-ефект у дзеркалі",
+          "to_node_id": "q17",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "motivation",
+              "value": "appearance"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Заряд енергії, щоб підкорити цей світ",
+          "to_node_id": "q17",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "motivation",
+              "value": "energy"
+            }
+          ],
+          "weights": {}
+        }
+      ]
+    },
+    "11": {
+      "id": "11",
+      "type": "question",
+      "content": "Що стане для тебе найкращою винагородою через місяць?",
+      "edges": [
+        {
+          "match_value": "Відображення у дзеркалі, яке вау!",
+          "to_node_id": "q19",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "motivation",
+              "value": "appearance"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Відчуття, що я можу звернути гори (енергія)",
+          "to_node_id": "q19",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "motivation",
+              "value": "energy"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Просто хочу почуватися здоровим(ою)",
+          "to_node_id": "q19",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "motivation",
+              "value": "health"
+            }
+          ],
+          "weights": {}
+        }
+      ]
+    },
+    "77": {
+      "id": "77",
+      "type": "question",
+      "content": "Яка твоя головна суперсила на цей місяць?",
+      "edges": [
+        {
+          "match_value": "Схуднути та відчути легкість",
+          "to_node_id": "4",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "goal",
+              "value": "weight_loss"
+            },
+            {
+              "type": "set",
+              "field_name": "goal",
+              "value": "flexibility"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Стати сильнішим(ою)",
+          "to_node_id": "3",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "goal",
+              "value": "strength"
+            },
+            {
+              "type": "set",
+              "field_name": "goal",
+              "value": "endurance"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Подолати стрес та знайти спокій",
+          "to_node_id": "4",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "goal",
+              "value": "stress_relief"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Нарешті позбутися болю в спині/суглобах.",
+          "to_node_id": "q9",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "goal",
+              "value": "health"
+            }
+          ],
+          "weights": {}
+        }
+      ]
+    },
+    "q9": {
+      "id": "q9",
+      "type": "question",
+      "content": "Як би ти оцінив(ла) свої стосунки зі спортом зараз?",
+      "edges": [
+        {
+          "match_value": "Ми щойно познайомилися (Початківець)",
+          "to_node_id": "q15",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "level",
+              "value": "beginner"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Буваємо разом кілька разів на тиждень (Середній)",
+          "to_node_id": "q15",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "level",
+              "value": "intermediate"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "Це кохання всього мого життя (Профі)",
+          "to_node_id": "q15",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "level",
+              "value": "advanced"
+            }
+          ],
+          "weights": {}
+        }
+      ]
+    },
+    "q15": {
+      "id": "q15",
+      "type": "question",
+      "content": "Наскільки заряджена твоя \"батарейка\" сьогодні?",
+      "edges": [
+        {
+          "match_value": "10% — тримаюся на каві та силі волі",
+          "to_node_id": "5",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "wellbeing",
+              "value": "low"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "50% — нормальний робочий режим",
+          "to_node_id": "5",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "wellbeing",
+              "value": "mid"
+            }
+          ],
+          "weights": {}
+        },
+        {
+          "match_value": "100% — готовий(а) до нових звершень",
+          "to_node_id": "5",
+          "actions": [
+            {
+              "type": "set",
+              "field_name": "wellbeing",
+              "value": "high"
+            }
+          ],
+          "weights": {}
+        }
+      ]
+    },
+    "q17": {
+      "id": "q17",
+      "type": "finish",
+      "content": "",
+      "edges": []
+    },
+    "q19": {
+      "id": "q19",
+      "type": "finish",
+      "content": "",
+      "edges": []
+    }
+  },
+  "offers": {
+    "offer_1": {
+      "id": "offer_1",
+      "name": "Weight Loss Starter (Home) — 4 тижні",
+      "description": "Digital: план схуднення вдома (20–30 хв)\nPhysical wellness kit: Home Fat-Burn Kit (resistance bands, скакалка, шейкер/пляшка, електроліти + healthy snack)",
+      "requirements": [
+        {
+          "field_name": "Context",
+          "match_value": "home",
+          "is_obligatory": true,
+          "score": 10
+        },
+        {
+          "field_name": "Goal",
+          "match_value": "weight_loss",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Level",
+          "match_value": "beginner",
+          "is_obligatory": false,
+          "score": 2
+        },
+        {
+          "field_name": "Preferences",
+          "match_value": "cardio",
+          "is_obligatory": false,
+          "score": 3
+        }
+      ]
+    },
+    "offer_2": {
+      "id": "offer_2",
+      "name": "Lean Strength Builder (Gym) — силові + прогресія",
+      "description": "Digital: програма для залу\nPhysical wellness kit: Gym Support Kit (wrist wraps/straps, mini loop band, компактний рушник, електроліти/протеїн-снек)",
+      "requirements": [
+        {
+          "field_name": "Context",
+          "match_value": "gym",
+          "is_obligatory": true,
+          "score": 5
+        },
+        {
+          "field_name": "Goal",
+          "match_value": "strength",
+          "is_obligatory": true,
+          "score": 5
+        },
+        {
+          "field_name": "Constraints",
+          "match_value": "injury",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Motivation",
+          "match_value": "appearance",
+          "is_obligatory": false,
+          "score": 4
+        },
+        {
+          "field_name": "Level",
+          "match_value": "advanced",
+          "is_obligatory": false,
+          "score": 1
+        },
+        {
+          "field_name": "Level",
+          "match_value": "intermediate",
+          "is_obligatory": false,
+          "score": 1
+        }
+      ]
+    },
+    "offer_3": {
+      "id": "offer_3",
+      "name": "Low-Impact Fat Burn — “суглоби friendly”",
+      "description": "Digital: low-impact план (коліна/спина friendly)\nPhysical wellness kit: Joint-Friendly Kit (knee sleeve/бандаж, massage ball, mini loop bands, cooling patch/recovery gel)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "weight_loss",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Goal",
+          "match_value": "health",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Constraints",
+          "match_value": "injury",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Context",
+          "match_value": "home",
+          "is_obligatory": false,
+          "score": 5
+        }
+      ]
+    },
+    "offer_4": {
+      "id": "offer_4",
+      "name": "Run Your First 5K (Outdoor) — бігова програма",
+      "description": "Digital: підготовка до 5K (3 рази/тиж)\nPhysical wellness kit: Runner Starter Kit (electrolytes, reflective armband/safety light, blister kit, running belt)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "endurance",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "context",
+          "match_value": "outdoor",
+          "is_obligatory": true,
+          "score": 5
+        },
+        {
+          "field_name": "Constraints",
+          "match_value": "injury",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Motivation",
+          "match_value": "energy",
+          "is_obligatory": false,
+          "score": 5
+        }
+      ]
+    },
+    "offer_5": {
+      "id": "offer_5",
+      "name": "Yoga & Mobility (Home) — гнучкість + спина/постава",
+      "description": "Digital: йога/мобільність 10–25 хв\nPhysical wellness kit: Mobility Kit (travel yoga mat або yoga strap, massage ball, mini foam roller)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "flexibility",
+          "is_obligatory": true,
+          "score": 5
+        },
+        {
+          "field_name": "Context",
+          "match_value": "home",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Preferences",
+          "match_value": "yoga",
+          "is_obligatory": false,
+          "score": 10
+        }
+      ]
+    },
+    "offer_6": {
+      "id": "offer_6",
+      "name": "Stress Reset Program — ментальний ресет + мікрозвички",
+      "description": "Digital: дихання/медитації/антистрес рутини\nPhysical wellness kit: Calm-Now Kit (eye mask, aroma roll-on/mini candle, tea sticks, stress ball/fidget, quick reset card)",
+      "requirements": [
+        {
+          "field_name": "goal",
+          "match_value": "stress_relief",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Wellbeing",
+          "match_value": "low",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Motivation",
+          "match_value": "health",
+          "is_obligatory": false,
+          "score": 4
+        },
+        {
+          "field_name": "Constraints",
+          "match_value": "time",
+          "is_obligatory": false,
+          "score": 6
+        }
+      ]
+    },
+    "offer_7": {
+      "id": "offer_7",
+      "name": "Quick Fit Micro-Workouts — 10–15 хв щодня",
+      "description": "Digital: короткі щоденні тренування\nPhysical wellness kit: Micro-Workout Kit (slider discs, mini loop bands, шейкер/пляшка, mini routine card)",
+      "requirements": [
+        {
+          "field_name": "constraints",
+          "match_value": "time",
+          "is_obligatory": true,
+          "score": 10
+        },
+        {
+          "field_name": "Wellbeing",
+          "match_value": "mid",
+          "is_obligatory": false,
+          "score": 5
+        },
+        {
+          "field_name": "Level",
+          "match_value": "beginner",
+          "is_obligatory": false,
+          "score": 5
+        }
+      ]
+    }
+  },
+  "layout": {
+    "3": {
+      "x": -42.056932442157844,
+      "y": 7.438813874370243
+    },
+    "4": {
+      "x": 246.0941237794957,
+      "y": 647.5321547223904
+    },
+    "5": {
+      "x": 1424.3485089649228,
+      "y": 421.1546340370937
+    },
+    "6": {
+      "x": 946.824748540934,
+      "y": 651.7142639680452
+    },
+    "11": {
+      "x": 915.9533974702614,
+      "y": 63.86940625596665
+    },
+    "77": {
+      "x": -478.2031296730491,
+      "y": 263.1357402748311
+    },
+    "q9": {
+      "x": 283.8399523047053,
+      "y": 376.1361710261658
+    },
+    "q15": {
+      "x": 933.4202756794373,
+      "y": 326.62761598114736
+    },
+    "q17": {
+      "x": 1423.832766161385,
+      "y": 739.5906333740375
+    },
+    "q19": {
+      "x": 1388.517745087601,
+      "y": 175.3989657878905
+    }
+  }
+}

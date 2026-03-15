@@ -6,6 +6,8 @@ export type Action =
   | { type: 'LOAD_STATE'; state: AppState }
   | { type: 'RESET' }
   | { type: 'ADD_NODE'; position?: { x: number; y: number } }
+  | { type: 'ADD_FINISH_NODE'; position?: { x: number; y: number } }
+  | { type: 'ADD_INFO_NODE'; position?: { x: number; y: number } }
   | { type: 'UPDATE_NODE_TEXT'; nodeId: string; text: string }
   | { type: 'DELETE_NODE'; nodeId: string }
   | { type: 'ADD_ANSWER'; nodeId: string }

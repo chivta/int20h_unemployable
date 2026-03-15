@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
 import { Plus, Trash2, Zap, X } from 'lucide-react'
@@ -18,6 +18,7 @@ export interface QuestionRFData extends Record<string, unknown> {
   answers: Array<{ edgeId: string; label: string; hasNext: boolean }>
   questionType: 'single' | 'multi'
   nextNodeId: string | null
+  isRoot?: boolean
 }
 
 export function QuestionNode({ data }: NodeProps & { data: QuestionRFData }) {
@@ -28,6 +29,18 @@ export function QuestionNode({ data }: NodeProps & { data: QuestionRFData }) {
 
   const [popupEdgeId, setPopupEdgeId] = useState<string | null>(null)
   const [schema, setSchema] = useState<Record<string, FieldSchema> | null>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!popupEdgeId) return
+    function handleOutsideClick(e: MouseEvent) {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        setPopupEdgeId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [popupEdgeId])
 
   const startEditing = (field: string, initialValue: string) => {
     if (blurTimer.current) clearTimeout(blurTimer.current)
@@ -98,6 +111,11 @@ export function QuestionNode({ data }: NodeProps & { data: QuestionRFData }) {
       {/* Question header */}
       <div className="rounded-t-md bg-blue-50 px-3 py-2">
         <div className="mb-1 flex items-center gap-1.5">
+          {data.isRoot && (
+            <span className="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-indigo-600 text-white">
+              Start
+            </span>
+          )}
           <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-500">Question</p>
           {/* Single/Multi toggle */}
           <button
@@ -220,13 +238,9 @@ export function QuestionNode({ data }: NodeProps & { data: QuestionRFData }) {
 
       {/* Config Popup */}
       {popupEdgeId && popupEdge && (
-        <div
-          className="nodrag nopan fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-          onMouseDown={e => {
-            if (e.target === e.currentTarget) setPopupEdgeId(null)
-          }}
-        >
+        <div className="nodrag nopan fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div
+            ref={popupRef}
             className="relative w-80 max-h-[80vh] overflow-y-auto rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col"
             onMouseDown={e => e.stopPropagation()}
             onClick={e => e.stopPropagation()}
