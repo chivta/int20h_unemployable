@@ -81,6 +81,15 @@ func (h *UserHandler) StartSession(c *fiber.Ctx) error {
 
 	sessionID := uuid.New().String()
 
+	// Count question nodes (nodes that have at least one outgoing edge)
+	allNodes := h.Store.GetAllNodes()
+	totalQuestions := 0
+	for _, n := range allNodes {
+		if len(n.Edges) > 0 {
+			totalQuestions++
+		}
+	}
+
 	if h.DB != nil {
 		_ = h.DB.CreateSession(&database.QuizSession{
 			ID:        sessionID,
@@ -89,9 +98,10 @@ func (h *UserHandler) StartSession(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"node":       startNode,
-		"user":       userState,
-		"session_id": sessionID,
+		"node":            startNode,
+		"user":            userState,
+		"session_id":      sessionID,
+		"total_questions": totalQuestions,
 	})
 }
 

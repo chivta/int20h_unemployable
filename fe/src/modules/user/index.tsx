@@ -435,12 +435,16 @@ function useServerQuiz() {
   const [results, setResults] = useState<OfferResult[]>([])
   const [error, setError] = useState('')
   const [answering, setAnswering] = useState(false)
+  const [step, setStep] = useState(0)
+  const [total, setTotal] = useState(0)
 
   const startQuiz = useCallback(async () => {
     setPhase('loading')
     setError('')
     setNode(null)
     setResults([])
+    setStep(0)
+    setTotal(0)
     try {
       const res = await fetch(`${API_URL}/api/user/reset`, { method: 'POST' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -448,6 +452,7 @@ function useServerQuiz() {
       if (!data.node?.id) throw new Error('No start node configured in the admin panel.')
       setSessionId(data.session_id)
       setNode(data.node)
+      if (data.total_questions) setTotal(data.total_questions)
       setPhase('quiz')
     } catch (e) {
       setError((e as Error).message)
@@ -470,6 +475,7 @@ function useServerQuiz() {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
+      setStep(s => s + 1)
 
       if (!data.node?.id) {
         const recRes = await fetch(`${API_URL}/api/user/recommendations?session_id=${sessionId}`)
@@ -488,7 +494,7 @@ function useServerQuiz() {
     }
   }
 
-  return { phase, node, results, error, handleAnswer, startQuiz, answering }
+  return { phase, node, results, error, handleAnswer, startQuiz, answering, step, total }
 }
 
 // ---------------------------------------------------------------------------
@@ -831,18 +837,253 @@ function LocalQuizPage({ localConfig }: { localConfig: BackendConfig }) {
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Production quiz UI — progress bar + polished layout
+// ---------------------------------------------------------------------------
+
+function ProgressBar({ step, total }: { step: number; total: number }) {
+  const pct = total > 0 ? Math.min(100, Math.round((step / total) * 100)) : 0
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs font-medium text-indigo-600">
+          {total > 0 ? `Question ${step + 1} of ${total}` : `Question ${step + 1}`}
+        </span>
+        {total > 0 && (
+          <span className="text-xs text-gray-400">{pct}%</span>
+        )}
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-indigo-500 transition-all duration-500 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ProductionQuizScreen({
+  node,
+  onAnswer,
+  onMultiAnswer,
+  answering,
+  step,
+  total,
+}: {
+  node: BackendNode
+  onAnswer: (answer: string) => void
+  onMultiAnswer?: (answers: string[]) => void
+  answering?: boolean
+  step: number
+  total: number
+}) {
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([])
+
+  useEffect(() => {
+    setSelectedAnswers([])
+  }, [node.id])
+
+  const isInfo = node.type === 'info' || node.type === 'message'
+  const isMulti = node.type === 'multi_choice'
+
+  const edges = isInfo
+    ? [{ match_value: 'Continue', to_node_id: node.edges[0]?.to_node_id ?? '', actions: node.edges[0]?.actions ?? [] }]
+    : node.edges
+
+  function toggleAnswer(value: string) {
+    setSelectedAnswers(prev =>
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex flex-col">
+      {/* Header */}
+      <header className="w-full px-6 py-4 flex items-center justify-center border-b border-white/60 bg-white/70 backdrop-blur-sm">
+        <span className="text-base font-bold tracking-tight text-indigo-700">BetterMe</span>
+      </header>
+
+      {/* Progress */}
+      <div className="w-full max-w-lg mx-auto px-6 pt-6">
+        <ProgressBar step={step} total={total} />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+        <div className="w-full max-w-lg space-y-5">
+          {/* Question card */}
+          <div className="rounded-2xl bg-white shadow-sm border border-slate-100 px-8 py-7">
+            {isMulti && (
+              <p className="mb-2 text-xs font-semibold text-indigo-500 uppercase tracking-widest">
+                Select all that apply
+              </p>
+            )}
+            <p className="text-xl font-semibold leading-snug text-gray-900">{node.content}</p>
+          </div>
+
+          {/* Answers */}
+          {isMulti ? (
+            <>
+              <div className="space-y-3">
+                {edges.map((edge, idx) => {
+                  const isSelected = selectedAnswers.includes(edge.match_value)
+                  return (
+                    <button
+                      key={idx}
+                      disabled={answering}
+                      onClick={() => toggleAnswer(edge.match_value)}
+                      className={[
+                        'w-full rounded-xl border-2 px-5 py-4 text-left text-sm font-medium transition-all',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400',
+                        'disabled:cursor-not-allowed disabled:opacity-50',
+                        isSelected
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-800 shadow-sm'
+                          : 'border-slate-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50/40',
+                      ].join(' ')}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className={[
+                          'flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors',
+                          isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-gray-300 bg-white',
+                        ].join(' ')}>
+                          {isSelected && (
+                            <svg viewBox="0 0 10 10" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1.5 5.5L4 8l4.5-5.5" />
+                            </svg>
+                          )}
+                        </span>
+                        {edge.match_value || 'Option'}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <button
+                disabled={answering || selectedAnswers.length === 0}
+                onClick={() => onMultiAnswer?.(selectedAnswers)}
+                className="w-full rounded-xl bg-indigo-600 px-5 py-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+              >
+                {answering ? 'Loading…' : 'Continue →'}
+              </button>
+            </>
+          ) : (
+            <div className="space-y-3">
+              {edges.map((edge, idx) => (
+                <button
+                  key={isInfo ? idx : edge.match_value}
+                  disabled={answering}
+                  onClick={() => onAnswer(isInfo ? (node.edges[0]?.match_value ?? '') : edge.match_value)}
+                  className="w-full rounded-xl border-2 border-slate-200 bg-white px-5 py-4 text-left text-sm font-medium text-gray-700 shadow-sm transition-all hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-800 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {edge.match_value || 'Continue →'}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProductionResultsScreen({ results, onRestart }: { results: OfferResult[]; onRestart: () => void }) {
+  const top = results[0]
+  const rest = results.slice(1)
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex flex-col">
+      {/* Header */}
+      <header className="w-full px-6 py-4 flex items-center justify-center border-b border-white/60 bg-white/70 backdrop-blur-sm">
+        <span className="text-base font-bold tracking-tight text-indigo-700">BetterMe</span>
+      </header>
+
+      <div className="flex-1 flex flex-col items-center px-6 py-10">
+        <div className="w-full max-w-lg space-y-5">
+          <div className="text-center space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500">Your results</p>
+            <h1 className="text-3xl font-bold text-gray-900">Your perfect fit</h1>
+            <p className="text-sm text-gray-500">Based on your answers, here are the programs matched for you.</p>
+          </div>
+
+          {results.length === 0 ? (
+            <p className="text-center text-sm text-gray-400 py-8">No matching programs found.</p>
+          ) : (
+            <>
+              {/* Top result */}
+              {top && (
+                <div className="rounded-2xl bg-indigo-600 text-white p-6 shadow-lg">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-indigo-200 mb-2">Best match</p>
+                  <h2 className="text-lg font-bold leading-snug mb-1">{top.Name}</h2>
+                  {top.Description && (
+                    <p className="text-sm text-indigo-100 leading-relaxed whitespace-pre-line">{top.Description}</p>
+                  )}
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+                      Match score: {top.Score}
+                    </span>
+                  </div>
+                  <button className="mt-5 w-full rounded-xl bg-white text-indigo-700 py-3 text-sm font-bold hover:bg-indigo-50 transition-colors active:scale-[0.98]">
+                    Get started →
+                  </button>
+                </div>
+              )}
+
+              {/* Other matches */}
+              {rest.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Also a great fit</p>
+                  {rest.map(offer => (
+                    <div key={offer.ID} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <h2 className="text-sm font-semibold text-gray-800">{offer.Name}</h2>
+                        <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                          {offer.Score}
+                        </span>
+                      </div>
+                      {offer.Description && (
+                        <p className="mt-1 text-xs text-gray-500 leading-relaxed whitespace-pre-line">{offer.Description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          <button
+            onClick={onRestart}
+            className="w-full rounded-xl border-2 border-slate-200 bg-white px-5 py-3 text-sm font-medium text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+          >
+            Retake quiz
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Server quiz page wrapper
 // ---------------------------------------------------------------------------
 
 function ServerQuizPage() {
-  const { phase, node, results, error, handleAnswer, startQuiz, answering } = useServerQuiz()
+  const { phase, node, results, error, handleAnswer, startQuiz, answering, step, total } = useServerQuiz()
 
   if (phase === 'loading') return <LoadingScreen />
   if (phase === 'error') return <ErrorScreen error={error} onRetry={startQuiz} isLocal={false} />
-  if (phase === 'results') return <ResultsScreen results={results} onRestart={startQuiz} isLocal={false} />
+  if (phase === 'results') return <ProductionResultsScreen results={results} onRestart={startQuiz} />
   if (!node) return <LoadingScreen />
 
-  return <QuizScreen node={node} onAnswer={handleAnswer} onRestart={startQuiz} answering={answering} isLocal={false} />
+  return (
+    <ProductionQuizScreen
+      node={node}
+      onAnswer={handleAnswer}
+      answering={answering}
+      step={step}
+      total={total}
+    />
+  )
 }
 
 // ---------------------------------------------------------------------------
