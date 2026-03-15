@@ -162,7 +162,7 @@ func (s *Store) ApplyActions(incomingActions []models.Action) models.UserData {
 		if action.Value == nil || action.FieldName == "" {
 			continue
 		}
-		field := v.FieldByName(action.FieldName)
+		field := v.FieldByName(models.SnakeToPascal(action.FieldName))
 		if !field.IsValid() || !field.CanSet() {
 			continue
 		}

@@ -3,7 +3,6 @@ package engine
 import (
 	"reflect"
 	"sort"
-	"strings"
 
 	"github.com/chivta/int20h_unemployable/internal/models"
 )
@@ -23,15 +22,7 @@ func CalculateRecommendations(user models.UserData, offers []models.Offer) []mod
 		disqualified := false
 
 		for _, req := range offer.Requirements {
-			// Find the field in UserData (case-insensitive approximation)
-			// Assuming field names in requirements match the JSON tags, e.g., "goal" -> "Goal"
-			var fieldName string
-			// Simple Title case since our struct fields are capitalized
-			if len(req.FieldName) > 0 {
-				fieldName = strings.ToUpper(req.FieldName[:1]) + req.FieldName[1:]
-			}
-
-			field := userVal.FieldByName(fieldName)
+			field := userVal.FieldByName(models.SnakeToPascal(req.FieldName))
 			if !field.IsValid() {
 				// Field not found in struct - treat as not matching
 				if req.IsObligatory {

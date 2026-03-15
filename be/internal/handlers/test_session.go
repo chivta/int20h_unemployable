@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"reflect"
-	"strings"
 	"sync"
 
 	"github.com/chivta/int20h_unemployable/internal/actions"
@@ -22,17 +21,6 @@ var (
 	testSessionsMu sync.Mutex
 )
 
-// snakeToPascal converts a snake_case string to PascalCase.
-func snakeToPascal(s string) string {
-	parts := strings.Split(s, "_")
-	for i, p := range parts {
-		if len(p) > 0 {
-			parts[i] = strings.ToUpper(p[:1]) + p[1:]
-		}
-	}
-	return strings.Join(parts, "")
-}
-
 // applyActionsToUserData applies actions to a UserData copy and returns the result.
 func applyActionsToUserData(userData models.UserData, acts []models.Action) models.UserData {
 	v := reflect.ValueOf(&userData).Elem()
@@ -40,7 +28,7 @@ func applyActionsToUserData(userData models.UserData, acts []models.Action) mode
 		if action.Value == nil || action.FieldName == "" {
 			continue
 		}
-		fieldName := snakeToPascal(action.FieldName)
+		fieldName := models.SnakeToPascal(action.FieldName)
 		field := v.FieldByName(fieldName)
 		if !field.IsValid() || !field.CanSet() {
 			continue
