@@ -4,6 +4,7 @@ import { useNavigate, useBlocker } from '@tanstack/react-router'
 import { useAppContext } from '../state/context'
 import { Button } from '../../../shared/components/Button'
 import { toBackendConfig, fromBackendConfig } from '../utils/apiTransform'
+import initConfig from '../../../../init.json'
 import { validate } from '../utils/validation'
 import { OffersModal } from './OffersModal'
 
@@ -81,17 +82,28 @@ export function Toolbar() {
       if (initialLoadDoneRef.current) return
       initialLoadDoneRef.current = true
       if (Object.keys(state.app.dag.nodes).length > 0) return
+      let loadedFromBackend = false
       try {
         const r = await fetch(`${API_URL}/api/admin/config/versions`)
-        if (!r.ok) return
-        const data = await r.json()
-        const list: { version: number; created_at: string }[] = Array.isArray(data) ? data : []
-        setVersions(list)
-        if (list.length === 0) return
-        const latest = list[0]
-        setSelectedVersion(String(latest.version))
-        await handleLoadVersion(String(latest.version))
+        if (r.ok) {
+          const data = await r.json()
+          const list: { version: number; created_at: string }[] = Array.isArray(data) ? data : []
+          setVersions(list)
+          if (list.length > 0) {
+            const latest = list[0]
+            setSelectedVersion(String(latest.version))
+            await handleLoadVersion(String(latest.version))
+            loadedFromBackend = true
+          }
+        }
       } catch {}
+      if (!loadedFromBackend) {
+        const { state: loaded, positions } = fromBackendConfig(initConfig as Parameters<typeof fromBackendConfig>[0])
+        dispatch({ type: 'LOAD_STATE', state: loaded })
+        for (const [nodeId, pos] of Object.entries(positions)) {
+          dispatch({ type: 'SET_NODE_POSITION', nodeId, position: pos })
+        }
+      }
     }
     init()
   }, [])

@@ -173,7 +173,7 @@ export function NodePanel({ nodeId }: { nodeId: string }) {
       </div>
 
       <div className="space-y-1 border-t border-gray-200 pt-3">
-        {!hasIncoming && state.app.dag.root !== nodeId && state.app.dag.end !== nodeId && (
+        {!hasIncoming && state.app.dag.root !== nodeId && node.nodeType !== 'finish' && node.nodeType !== 'info' && (
           <Button
             size="sm"
             variant="outline"
@@ -188,15 +188,13 @@ export function NodePanel({ nodeId }: { nodeId: string }) {
           variant="outline"
           className="w-full text-red-600 hover:bg-red-50 border-red-200"
           onClick={() => dispatch({ type: 'DELETE_NODE', nodeId })}
-          disabled={hasIncoming || nodeId === state.app.dag.root || nodeId === state.app.dag.end}
+          disabled={hasIncoming || nodeId === state.app.dag.root}
           title={
             nodeId === state.app.dag.root
               ? 'Cannot delete: this is the root node'
-              : nodeId === state.app.dag.end
-                ? 'Cannot delete: this is the end node'
-                : hasIncoming
-                  ? 'Cannot delete: other answers point to this node'
-                  : undefined
+              : hasIncoming
+                ? 'Cannot delete: other answers point to this node'
+                : undefined
           }
         >
           <Trash2 size={12} /> Delete node

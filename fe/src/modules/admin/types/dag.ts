@@ -4,6 +4,7 @@ export interface DagNode {
   answers: string[] // ordered array of edge IDs
   questionType: 'single' | 'multi'
   nextNodeId?: string | null // used by multi-choice nodes for the single outgoing edge
+  nodeType?: 'question' | 'finish' | 'info'
 }
 
 export interface EdgeAction {
@@ -22,7 +23,6 @@ export interface DagEdge {
 
 export interface DagData {
   root: string
-  end: string
   nodes: Record<string, DagNode>
   edges: Record<string, DagEdge>
 }

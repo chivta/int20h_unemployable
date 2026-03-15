@@ -17,12 +17,10 @@ function makeInitialApp(): AppState {
   return {
     dag: {
       root: 'q1',
-      end: 'end',
       nodes: {
         q1: { id: 'q1', text: 'What is your primary fitness goal?', answers: ['a1'], questionType: 'single', nextNodeId: null },
         q2: { id: 'q2', text: 'How many days per week can you train?', answers: ['a2'], questionType: 'single', nextNodeId: null },
         q3: { id: 'q3', text: 'Do you have access to a gym?', answers: [], questionType: 'single', nextNodeId: null },
-        end: { id: 'end', text: 'End', answers: [], questionType: 'single', nextNodeId: null },
       },
       edges: {
         a1: { id: 'a1', label: 'Next', next: 'q2', weights: { starter: 1, premium: 1 }, actions: [] },
@@ -67,16 +65,9 @@ export function reducer(state: FullState, action: Action): FullState {
           { ...node, questionType: node.questionType ?? 'single', nextNodeId: node.nextNodeId ?? null },
         ])
       )
-      // Normalize: ensure end node exists (for configs saved before this field existed)
-      const loadedEnd = action.state.dag.end
-      const endNodeMissing = !loadedEnd || !normalizedNodes[loadedEnd]
-      if (endNodeMissing) {
-        normalizedNodes['end'] = { id: 'end', text: 'End', answers: [], questionType: 'single', nextNodeId: null }
-      }
-      const resolvedEnd = endNodeMissing ? 'end' : loadedEnd
       const normalizedState: AppState = {
         ...action.state,
-        dag: { ...action.state.dag, end: resolvedEnd, nodes: normalizedNodes },
+        dag: { ...action.state.dag, nodes: normalizedNodes },
       }
       return {
         ...state,
@@ -123,7 +114,7 @@ export function reducer(state: FullState, action: Action): FullState {
     }
 
     case 'DELETE_NODE': {
-      if (action.nodeId === state.app.dag.root || action.nodeId === state.app.dag.end) return state
+      if (action.nodeId === state.app.dag.root) return state
       const node = state.app.dag.nodes[action.nodeId]
       if (!node) return state
 
@@ -152,7 +143,7 @@ export function reducer(state: FullState, action: Action): FullState {
       return {
         ...state,
         isDirty: true,
-        app: { ...state.app, dag: { root: newRoot, end: state.app.dag.end, nodes: newNodes, edges: newEdges } },
+        app: { ...state.app, dag: { root: newRoot, nodes: newNodes, edges: newEdges } },
         positions: newPositions,
         selection: { type: 'none' },
       }
@@ -398,6 +389,46 @@ export function reducer(state: FullState, action: Action): FullState {
         nodes: { ...state.app.dag.nodes, [action.nodeId]: { ...node, nextNodeId: action.nextNodeId } },
       }
       return { ...state, isDirty: true, app: { ...state.app, dag } }
+    }
+
+    case 'ADD_FINISH_NODE': {
+      const id = nextNodeId()
+      const n = Object.keys(state.app.dag.nodes).length
+      const pos = action.position ?? { x: 80 + (n % 4) * 260, y: 80 + Math.floor(n / 4) * 160 }
+      const dag: DagData = {
+        ...state.app.dag,
+        nodes: {
+          ...state.app.dag.nodes,
+          [id]: { id, text: '', answers: [], questionType: 'single', nextNodeId: null, nodeType: 'finish' },
+        },
+      }
+      return {
+        ...state,
+        isDirty: true,
+        app: { ...state.app, dag },
+        positions: { ...state.positions, [id]: pos },
+        selection: { type: 'none' },
+      }
+    }
+
+    case 'ADD_INFO_NODE': {
+      const id = nextNodeId()
+      const n = Object.keys(state.app.dag.nodes).length
+      const pos = action.position ?? { x: 80 + (n % 4) * 260, y: 80 + Math.floor(n / 4) * 160 }
+      const dag: DagData = {
+        ...state.app.dag,
+        nodes: {
+          ...state.app.dag.nodes,
+          [id]: { id, text: '', answers: [], questionType: 'single', nextNodeId: null, nodeType: 'info' },
+        },
+      }
+      return {
+        ...state,
+        isDirty: true,
+        app: { ...state.app, dag },
+        positions: { ...state.positions, [id]: pos },
+        selection: { type: 'node', nodeId: id },
+      }
     }
 
     default:

@@ -36,7 +36,7 @@ interface BackendOffer {
 
 export interface BackendConfig {
   root?: string
-  end?: string
+  end?: string // kept for backward compat when reading old configs
   nodes: Record<string, BackendNode>
   offers: Record<string, BackendOffer>
   layout?: Record<string, { x: number; y: number }>
@@ -59,15 +59,19 @@ export function toBackendConfig(state: AppState, positions: Record<string, Posit
   const backendNodes: Record<string, BackendNode> = {}
 
   for (const [nodeId, node] of Object.entries(state.dag.nodes)) {
-    const isRoot = state.dag.root === nodeId
     const isMulti = node.questionType === 'multi'
+    const isFinish = node.nodeType === 'finish'
 
     let edges: BackendEdge[]
     let nodeType: string
 
-    if (isRoot) {
-      // Root node: single passthrough edge with empty match_value (auto-advances in quiz)
-      nodeType = 'root'
+    const isInfo = node.nodeType === 'info'
+
+    if (isFinish) {
+      nodeType = 'finish'
+      edges = []
+    } else if (isInfo) {
+      nodeType = 'info'
       edges = node.nextNodeId
         ? [{ match_value: '', to_node_id: node.nextNodeId, actions: [], weights: {} }]
         : []
@@ -128,7 +132,6 @@ export function toBackendConfig(state: AppState, positions: Record<string, Posit
 
   return {
     root: state.dag.root,
-    end: state.dag.end,
     nodes: backendNodes,
     offers: backendOffers,
     layout: positions,
@@ -164,15 +167,23 @@ export function fromBackendConfig(config: BackendConfig): { state: AppState; pos
     })
 
     const isMultiChoice = node.type === 'multi_choice'
-    // For multi-choice nodes, derive nextNodeId from the first edge's to_node_id
-    const nextNodeId = isMultiChoice ? (node.edges[0]?.to_node_id || null) : null
+    const isFinish = node.type === 'finish'
+    const isInfo = node.type === 'info'
+    // For multi-choice and info nodes, derive nextNodeId from the first edge's to_node_id
+    const nextNodeId = (isMultiChoice || isInfo) ? (node.edges[0]?.to_node_id || null) : null
     nodes[nodeId] = {
       id: nodeId,
       text: node.content,
       answers: answerIds,
       questionType: isMultiChoice ? 'multi' : 'single',
       nextNodeId,
+      ...(isFinish ? { nodeType: 'finish' as const } : isInfo ? { nodeType: 'info' as const } : {}),
     }
+  }
+
+  // Backward compat: if config.end is set, mark that node as a finish node
+  if (config.end && nodes[config.end]) {
+    nodes[config.end] = { ...nodes[config.end], nodeType: 'finish' }
   }
 
   const offers: AppState['offers'] = {}
@@ -190,18 +201,6 @@ export function fromBackendConfig(config: BackendConfig): { state: AppState; pos
   const rootCandidates = Object.keys(nodes).filter(id => !allTargets.has(id))
   const root = config.root ?? rootCandidates[0] ?? Object.keys(nodes)[0] ?? ''
 
-  // Determine end: use config.end if present and valid, else infer as node with no outgoing edges
-  let end = config.end && nodes[config.end] ? config.end : ''
-  if (!end) {
-    // Find nodes whose answers all have empty to_node_id, or have no answers
-    const endCandidates = Object.keys(nodes).filter(id => {
-      const n = nodes[id]
-      return n.answers.length === 0 || n.answers.every(eid => !edges[eid]?.next)
-    })
-    // Prefer a candidate that is not the root
-    end = endCandidates.find(id => id !== root) ?? endCandidates[0] ?? Object.keys(nodes)[0] ?? ''
-  }
-
   const positions: Record<string, Position> = {}
   if (config.layout) {
     for (const [id, pos] of Object.entries(config.layout)) {
@@ -213,7 +212,7 @@ export function fromBackendConfig(config: BackendConfig): { state: AppState; pos
 
   return {
     state: {
-      dag: { root, end, nodes, edges },
+      dag: { root, nodes, edges },
       offers,
       meta: { version: 1, updatedAt: new Date().toISOString(), updatedBy: 'admin' },
     },
