@@ -186,6 +186,15 @@ function useLocalQuiz(localConfig: BackendConfig) {
       return
     }
     setUserData(emptyUserData())
+    // Auto-skip root node — it's a visual marker, not a question
+    if (rootNode.type === 'root' && rootNode.edges[0]?.to_node_id) {
+      const firstQuestion = localConfig.nodes[rootNode.edges[0].to_node_id]
+      if (firstQuestion) {
+        setNode(firstQuestion)
+        setPhase('quiz')
+        return
+      }
+    }
     setNode(rootNode)
     setPhase('quiz')
   }, [localConfig])
@@ -464,8 +473,24 @@ function useServerQuiz() {
       const data = await res.json()
       if (!data.node?.id) throw new Error('No start node configured in the admin panel.')
       setSessionId(data.session_id)
-      setNode(data.node)
       if (data.total_questions) setTotal(data.total_questions)
+      // Auto-skip root node — it's a visual marker, not a question
+      if (data.node.type === 'root' && data.node.edges?.[0]?.to_node_id) {
+        const skipRes = await fetch(`${API_URL}/api/user/process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ node_id: data.node.id, answer: '', session_id: data.session_id }),
+        })
+        if (skipRes.ok) {
+          const skipData = await skipRes.json()
+          if (skipData.node?.id) {
+            setNode(skipData.node)
+            setPhase('quiz')
+            return
+          }
+        }
+      }
+      setNode(data.node)
       setPhase('quiz')
     } catch (e) {
       setError((e as Error).message)

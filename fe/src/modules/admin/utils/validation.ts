@@ -12,6 +12,7 @@ export function validate(state: AppState): { errors: string[]; warnings: string[
   }
 
   for (const node of Object.values(dag.nodes)) {
+    if (node.id === dag.root || node.id === dag.end) continue
     if (node.answers.length === 0) {
       warnings.push(`Node "${node.id}" ("${node.text || 'untitled'}") has no answers.`)
     }
