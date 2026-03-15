@@ -14,12 +14,12 @@ import '@xyflow/react/dist/style.css'
 import { useAppContext } from '../state/context'
 import { QuestionNode } from './nodes/QuestionNode'
 import type { QuestionRFData } from './nodes/QuestionNode'
+import { RootNode } from './nodes/RootNode'
+import { EndNode } from './nodes/EndNode'
 import { CustomEdge } from './edges/CustomEdge'
 import type { CustomEdgeData } from './edges/CustomEdge'
-import { EdgePanel } from './sidebar/EdgePanel'
-import { Zap } from 'lucide-react'
 
-const nodeTypes = { question: QuestionNode }
+const nodeTypes = { questionNode: QuestionNode, rootNode: RootNode, endNode: EndNode }
 const edgeTypes = { custom: CustomEdge }
 
 type ContextMenuState =
@@ -35,7 +35,6 @@ function ContextMenu({
   onRemoveEdge,
   onAddNode,
   onSelectEdge,
-  onOpenEdgeModal,
 }: {
   menu: ContextMenuState
   onClose: () => void
@@ -43,7 +42,6 @@ function ContextMenu({
   onRemoveEdge: (edgeId: string) => void
   onAddNode: (x: number, y: number) => void
   onSelectEdge: (edgeId: string) => void
-  onOpenEdgeModal: (edgeId: string) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
@@ -77,13 +75,6 @@ function ContextMenu({
       {menu.kind === 'edge' && (
         <>
           <button
-            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-            onClick={() => { onOpenEdgeModal(menu.edgeId); onClose() }}
-          >
-            Edit actions…
-          </button>
-          <div className="border-t border-slate-100 my-1" />
-          <button
             className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
             onClick={() => { onRemoveEdge(menu.edgeId); onClose() }}
           >
@@ -111,27 +102,32 @@ function FlowCanvasInner() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   const computedNodes: Node<QuestionRFData>[] = useMemo(() => {
-    return Object.values(app.dag.nodes).map(node => ({
-      id: node.id,
-      type: 'question',
-      position: positions[node.id] ?? { x: 0, y: 0 },
-      data: {
+    return Object.values(app.dag.nodes).map(node => {
+      const isRoot = app.dag.root === node.id
+      const isEnd = app.dag.end === node.id
+      const type = isRoot ? 'rootNode' : isEnd ? 'endNode' : 'questionNode'
+      return {
         id: node.id,
-        text: node.text,
-        answers: node.answers.map(edgeId => ({
-          edgeId,
-          label: app.dag.edges[edgeId]?.label ?? edgeId,
-          hasNext: !!app.dag.edges[edgeId]?.next,
-        })),
-        isRoot: app.dag.root === node.id,
-      },
-    }))
+        type,
+        position: positions[node.id] ?? { x: 0, y: 0 },
+        data: {
+          id: node.id,
+          text: node.text,
+          answers: node.answers.map(edgeId => ({
+            edgeId,
+            label: app.dag.edges[edgeId]?.label ?? edgeId,
+            hasNext: !!app.dag.edges[edgeId]?.next,
+          })),
+          questionType: node.questionType ?? 'single',
+          nextNodeId: node.nextNodeId ?? null,
+        },
+      }
+    })
   }, [app.dag, positions])
 
   const [rfNodes, setRfNodes] = useState<Node<QuestionRFData>[]>(computedNodes)
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
   const closeContextMenu = useCallback(() => setContextMenu(null), [])
-  const [edgeModalId, setEdgeModalId] = useState<string | null>(null)
 
   useEffect(() => {
     setRfNodes(computedNodes)
@@ -140,18 +136,34 @@ function FlowCanvasInner() {
   const rfEdges: Edge<CustomEdgeData>[] = useMemo(() => {
     const result: Edge<CustomEdgeData>[] = []
     for (const node of Object.values(app.dag.nodes)) {
-      for (const edgeId of node.answers) {
-        const edge = app.dag.edges[edgeId]
-        if (!edge?.next) continue
-        result.push({
-          id: edgeId,
-          source: node.id,
-          sourceHandle: edgeId,
-          target: edge.next,
-          type: 'custom',
-          markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b', width: 20, height: 20 },
-          data: { edgeId, label: edge.label, actions: edge.actions ?? [] },
-        })
+      if ((node.questionType ?? 'single') === 'multi') {
+        // Multi-choice: one outgoing edge from the 'out' handle using nextNodeId
+        if (node.nextNodeId) {
+          result.push({
+            id: `${node.id}-out`,
+            source: node.id,
+            sourceHandle: 'out',
+            target: node.nextNodeId,
+            type: 'custom',
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b', width: 20, height: 20 },
+            data: { edgeId: `${node.id}-out`, label: '', actions: [] },
+          })
+        }
+      } else {
+        // Single-choice: per-answer edges
+        for (const edgeId of node.answers) {
+          const edge = app.dag.edges[edgeId]
+          if (!edge?.next) continue
+          result.push({
+            id: edgeId,
+            source: node.id,
+            sourceHandle: edgeId,
+            target: edge.next,
+            type: 'custom',
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b', width: 20, height: 20 },
+            data: { edgeId, label: edge.label, actions: edge.actions ?? [] },
+          })
+        }
       }
     }
     return result
@@ -167,7 +179,11 @@ function FlowCanvasInner() {
   }, [dispatch])
 
   const onConnect = useCallback((connection: Connection) => {
-    if (connection.sourceHandle && connection.target) {
+    if (!connection.sourceHandle || !connection.target) return
+    if (connection.sourceHandle === 'out') {
+      // Multi-choice: dispatch SET_NODE_NEXT for the source node
+      dispatch({ type: 'SET_NODE_NEXT', nodeId: connection.source ?? '', nextNodeId: connection.target })
+    } else {
       dispatch({ type: 'SET_ANSWER_NEXT', edgeId: connection.sourceHandle, next: connection.target })
     }
   }, [dispatch])
@@ -203,7 +219,13 @@ function FlowCanvasInner() {
   }, [dispatch])
 
   const handleRemoveEdge = useCallback((edgeId: string) => {
-    dispatch({ type: 'DELETE_ANSWER', edgeId })
+    // Multi-choice synthetic edge id is `${nodeId}-out`
+    if (edgeId.endsWith('-out')) {
+      const nodeId = edgeId.slice(0, -4)
+      dispatch({ type: 'SET_NODE_NEXT', nodeId, nextNodeId: null })
+    } else {
+      dispatch({ type: 'SET_ANSWER_NEXT', edgeId, next: null })
+    }
   }, [dispatch])
 
   const handleAddNode = useCallback((x: number, y: number) => {
@@ -213,17 +235,6 @@ function FlowCanvasInner() {
   const handleSelectEdge = useCallback((edgeId: string) => {
     dispatch({ type: 'SELECT_EDGE', edgeId })
   }, [dispatch])
-
-  const handleOpenEdgeModal = useCallback((edgeId: string) => {
-    setEdgeModalId(edgeId)
-  }, [])
-
-  useEffect(() => {
-    if (!edgeModalId) return
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setEdgeModalId(null) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [edgeModalId])
 
   return (
     <div ref={containerRef} className="relative flex-1 h-full">
@@ -239,7 +250,7 @@ function FlowCanvasInner() {
         onPaneContextMenu={onPaneContextMenu}
         onPaneClick={closeContextMenu}
         onNodeClick={closeContextMenu}
-        onEdgeClick={closeContextMenu}
+        onEdgeClick={(_, edge) => { closeContextMenu(); handleSelectEdge(edge.id) }}
         fitView
         deleteKeyCode={null}
       >
@@ -253,62 +264,8 @@ function FlowCanvasInner() {
         onRemoveEdge={handleRemoveEdge}
         onAddNode={handleAddNode}
         onSelectEdge={handleSelectEdge}
-        onOpenEdgeModal={handleOpenEdgeModal}
       />
 
-      {edgeModalId && (() => {
-        const modalEdge = app.dag.edges[edgeModalId]
-        const actionCount = modalEdge?.actions?.length ?? 0
-        return (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-            onMouseDown={() => setEdgeModalId(null)}
-          >
-            <div
-              className="bg-white rounded-2xl shadow-2xl w-[460px] max-h-[85vh] flex flex-col ring-1 ring-black/10"
-              onMouseDown={e => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50">
-                    <Zap size={15} className="text-indigo-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">Edge actions</p>
-                    <p className="text-xs text-slate-400">
-                      {modalEdge?.label || edgeModalId}
-                      {' · '}
-                      {actionCount === 0 ? 'no actions' : `${actionCount} action${actionCount !== 1 ? 's' : ''}`}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-                  onClick={() => setEdgeModalId(null)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="overflow-y-auto p-6">
-                <EdgePanel edgeId={edgeModalId} />
-              </div>
-
-              {/* Footer */}
-              <div className="border-t border-slate-100 px-6 py-3 flex justify-end">
-                <button
-                  className="rounded-lg bg-slate-100 px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
-                  onClick={() => setEdgeModalId(null)}
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
     </div>
   )
 }

@@ -75,6 +75,9 @@ func main() {
 	user.Post("/reset", userHandler.Reset)
 	user.Get("/recommendations", userHandler.GetRecommendations)
 	user.Post("/purchase", userHandler.MarkPurchase)
+	user.Post("/test/reset", userHandler.TestReset)
+	user.Post("/test/process", userHandler.TestProcess)
+	user.Get("/test/recommendations", userHandler.TestRecommendations)
 
 
 	addr := ":8080"

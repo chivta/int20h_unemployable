@@ -24,5 +24,8 @@ export type Action =
   | { type: 'SELECT_EDGE'; edgeId: string }
   | { type: 'DESELECT' }
   | { type: 'SET_EDGE_ACTIONS'; edgeId: string; actions: EdgeAction[] }
+  | { type: 'SET_QUESTION_TYPE'; nodeId: string; questionType: 'single' | 'multi' }
+  | { type: 'SET_NODE_NEXT'; nodeId: string; nextNodeId: string | null }
   | { type: 'SET_VALIDATION'; warnings: string[] }
   | { type: 'DISMISS_VALIDATION' }
+  | { type: 'MARK_SAVED' }

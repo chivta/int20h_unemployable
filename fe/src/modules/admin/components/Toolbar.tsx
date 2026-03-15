@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { FileJson, Save, Play, ClipboardPaste, Tag } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
+import { useState, useEffect, useRef } from 'react'
+import { FileJson, Save, Play, ClipboardPaste, Tag, Loader2, Copy, Check } from 'lucide-react'
+import { useNavigate, useBlocker } from '@tanstack/react-router'
 import { useAppContext } from '../state/context'
 import { Button } from '../../../shared/components/Button'
 import { toBackendConfig, fromBackendConfig } from '../utils/apiTransform'
@@ -9,9 +9,29 @@ import { OffersModal } from './OffersModal'
 
 const API_URL = import.meta.env.VITE_API_URL ?? ''
 
+function CopyJsonButton({ getText }: { getText: () => string }) {
+  const [copied, setCopied] = useState(false)
+  function handleCopy() {
+    navigator.clipboard.writeText(getText()).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+    >
+      {copied ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+      {copied ? 'Copied!' : 'Copy'}
+    </button>
+  )
+}
+
 export function Toolbar() {
   const { state, dispatch } = useAppContext()
   const navigate = useNavigate()
+  const isDirty = state.isDirty
   const [showJson, setShowJson] = useState(false)
   const [showPaste, setShowPaste] = useState(false)
   const [pasteText, setPasteText] = useState('')
@@ -21,6 +41,9 @@ export function Toolbar() {
   const [showOffers, setShowOffers] = useState(false)
   const [versions, setVersions] = useState<{ version: number; created_at: string }[]>([])
   const [selectedVersion, setSelectedVersion] = useState<string>('')
+  const [navigating, setNavigating] = useState(false)
+  const skipBlockerRef = useRef(false)
+  const initialLoadDoneRef = useRef(false)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -33,7 +56,31 @@ export function Toolbar() {
   }, [state])
 
   useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  useBlocker({
+    blockerFn: (args) => {
+      if (skipBlockerRef.current) return false
+      if (!args?.next?.location?.pathname) return window.confirm('You have unsaved changes. Leave anyway?')
+      if (args.next.location.pathname === '/quiz') return false
+      return window.confirm('You have unsaved changes. Leave anyway?')
+    },
+    condition: isDirty,
+  })
+
+  useEffect(() => {
     async function init() {
+      if (initialLoadDoneRef.current) return
+      initialLoadDoneRef.current = true
+      if (Object.keys(state.app.dag.nodes).length > 0) return
       try {
         const r = await fetch(`${API_URL}/api/admin/config/versions`)
         if (!r.ok) return
@@ -92,6 +139,7 @@ export function Toolbar() {
         body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      dispatch({ type: 'MARK_SAVED' })
       flash('Saved to backend')
       // refresh version list
       fetch(`${API_URL}/api/admin/config/versions`)
@@ -178,8 +226,19 @@ export function Toolbar() {
           <Tag size={14} /> Offers
         </Button>
 
-        <Button size="sm" variant="default" onClick={() => navigate({ to: '/quiz' })}>
-          <Play size={14} /> Test Quiz
+        <Button
+          size="sm"
+          variant="default"
+          disabled={navigating}
+          onClick={() => {
+            skipBlockerRef.current = true
+            setNavigating(true)
+            navigate({ to: '/quiz', state: { localConfig: toBackendConfig(state.app, state.positions) } })
+            setTimeout(() => setNavigating(false), 500)
+          }}
+        >
+          {navigating ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+          {navigating ? 'Opening…' : 'Test Quiz'}
         </Button>
 
         {statusMsg && (
@@ -236,12 +295,15 @@ export function Toolbar() {
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
               <span className="font-semibold text-gray-800">Current App JSON</span>
-              <button
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-                onClick={() => setShowJson(false)}
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2">
+                <CopyJsonButton getText={() => JSON.stringify(toBackendConfig(state.app, state.positions), null, 2)} />
+                <button
+                  className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                  onClick={() => setShowJson(false)}
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <pre className="overflow-auto p-4 text-xs text-gray-700 font-mono flex-1">
               {JSON.stringify(toBackendConfig(state.app, state.positions), null, 2)}
