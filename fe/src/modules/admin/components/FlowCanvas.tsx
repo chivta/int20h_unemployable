@@ -136,8 +136,9 @@ function FlowCanvasInner() {
   const rfEdges: Edge<CustomEdgeData>[] = useMemo(() => {
     const result: Edge<CustomEdgeData>[] = []
     for (const node of Object.values(app.dag.nodes)) {
-      if ((node.questionType ?? 'single') === 'multi') {
-        // Multi-choice: one outgoing edge from the 'out' handle using nextNodeId
+      const isRoot = app.dag.root === node.id
+      if (isRoot || (node.questionType ?? 'single') === 'multi') {
+        // Root and multi-choice: single outgoing edge via 'out' handle using nextNodeId
         if (node.nextNodeId) {
           result.push({
             id: `${node.id}-out`,

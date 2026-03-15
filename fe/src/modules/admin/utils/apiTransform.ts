@@ -59,25 +59,53 @@ export function toBackendConfig(state: AppState, positions: Record<string, Posit
   const backendNodes: Record<string, BackendNode> = {}
 
   for (const [nodeId, node] of Object.entries(state.dag.nodes)) {
+    const isRoot = state.dag.root === nodeId
     const isMulti = node.questionType === 'multi'
-    const edges: BackendEdge[] = node.answers
-      .map(edgeId => state.dag.edges[edgeId])
-      .filter((e): e is DagEdge => Boolean(e))
-      .map(edge => ({
-        match_value: edge.label,
-        // For multi-choice nodes, all answers share the same outgoing node (nextNodeId)
-        to_node_id: isMulti ? (node.nextNodeId ?? '') : (edge.next ?? ''),
-        actions: (edge.actions ?? []).map(a => ({
-          type: a.type,
-          field_name: toSnakeCase(a.fieldName),
-          value: a.value,
-        })),
-        weights: edge.weights ?? {},
-      }))
+
+    let edges: BackendEdge[]
+    let nodeType: string
+
+    if (isRoot) {
+      // Root node: single passthrough edge with empty match_value (auto-advances in quiz)
+      nodeType = 'root'
+      edges = node.nextNodeId
+        ? [{ match_value: '', to_node_id: node.nextNodeId, actions: [], weights: {} }]
+        : []
+    } else if (isMulti) {
+      nodeType = 'multi_choice'
+      edges = node.answers
+        .map(edgeId => state.dag.edges[edgeId])
+        .filter((e): e is DagEdge => Boolean(e))
+        .map(edge => ({
+          match_value: edge.label,
+          to_node_id: node.nextNodeId ?? '',
+          actions: (edge.actions ?? []).map(a => ({
+            type: a.type,
+            field_name: toSnakeCase(a.fieldName),
+            value: a.value,
+          })),
+          weights: edge.weights ?? {},
+        }))
+    } else {
+      nodeType = 'question'
+      edges = node.answers
+        .map(edgeId => state.dag.edges[edgeId])
+        .filter((e): e is DagEdge => Boolean(e))
+        .map(edge => ({
+          match_value: edge.label,
+          to_node_id: edge.next ?? '',
+          actions: (edge.actions ?? []).map(a => ({
+            type: a.type,
+            field_name: toSnakeCase(a.fieldName),
+            value: a.value,
+          })),
+          weights: edge.weights ?? {},
+        }))
+    }
 
     backendNodes[nodeId] = {
       id: node.id,
-      type: node.questionType === 'multi' ? 'multi_choice' : 'question',
+      type: nodeType,
       content: node.text,
       edges,
     }

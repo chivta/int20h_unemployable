@@ -33,6 +33,17 @@ type FieldSchema struct {
 	Options []string `json:"options"` // empty if type == "int"
 }
 
+// SnakeToPascal converts a snake_case string to PascalCase (e.g. "body_goal" → "BodyGoal").
+func SnakeToPascal(s string) string {
+	parts := strings.Split(s, "_")
+	for i, p := range parts {
+		if len(p) > 0 {
+			parts[i] = strings.ToUpper(p[:1]) + p[1:]
+		}
+	}
+	return strings.Join(parts, "")
+}
+
 // GetUserDataSchema returns the schema for the UI, keyed by snake_case JSON field names.
 func GetUserDataSchema() map[string]FieldSchema {
 	schema := make(map[string]FieldSchema)

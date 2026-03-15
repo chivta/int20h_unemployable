@@ -32,6 +32,19 @@ interface OfferResult {
   Score: number
 }
 
+// Map raw backend JSON (lowercase keys) to OfferResult
+function mapBackendResults(raw: unknown[]): OfferResult[] {
+  return raw.map((r: unknown) => {
+    const o = r as Record<string, unknown>
+    return {
+      ID: (o.id ?? o.ID ?? '') as string,
+      Name: (o.name ?? o.Name ?? '') as string,
+      Description: (o.description ?? o.Description ?? '') as string,
+      Score: (o.score ?? o.Score ?? 0) as number,
+    }
+  })
+}
+
 type Phase = 'loading' | 'quiz' | 'results' | 'error'
 
 // ---------------------------------------------------------------------------
@@ -173,6 +186,15 @@ function useLocalQuiz(localConfig: BackendConfig) {
       return
     }
     setUserData(emptyUserData())
+    // Auto-skip root node — it's a visual marker, not a question
+    if (rootNode.type === 'root' && rootNode.edges[0]?.to_node_id) {
+      const firstQuestion = localConfig.nodes[rootNode.edges[0].to_node_id]
+      if (firstQuestion) {
+        setNode(firstQuestion)
+        setPhase('quiz')
+        return
+      }
+    }
     setNode(rootNode)
     setPhase('quiz')
   }, [localConfig])
@@ -343,7 +365,7 @@ function useTestQuiz(localConfig: BackendConfig) {
         const recRes = await fetch(`${API_URL}/api/user/test/recommendations?session_id=${sessionId}`)
         if (!recRes.ok) throw new Error(`HTTP ${recRes.status}`)
         const recData = await recRes.json()
-        setResults(recData.results ?? [])
+        setResults(mapBackendResults(recData.results ?? []))
         setPhase('results')
       } else {
         setNode(data.node)
@@ -393,7 +415,7 @@ function useTestQuiz(localConfig: BackendConfig) {
         const recRes = await fetch(`${API_URL}/api/user/test/recommendations?session_id=${sessionId}`)
         if (!recRes.ok) throw new Error(`HTTP ${recRes.status}`)
         const recData = await recRes.json()
-        setResults(recData.results ?? [])
+        setResults(mapBackendResults(recData.results ?? []))
         setPhase('results')
       } else {
         setNode(lastData.node as BackendNode)
@@ -451,8 +473,24 @@ function useServerQuiz() {
       const data = await res.json()
       if (!data.node?.id) throw new Error('No start node configured in the admin panel.')
       setSessionId(data.session_id)
-      setNode(data.node)
       if (data.total_questions) setTotal(data.total_questions)
+      // Auto-skip root node — it's a visual marker, not a question
+      if (data.node.type === 'root' && data.node.edges?.[0]?.to_node_id) {
+        const skipRes = await fetch(`${API_URL}/api/user/process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ node_id: data.node.id, answer: '', session_id: data.session_id }),
+        })
+        if (skipRes.ok) {
+          const skipData = await skipRes.json()
+          if (skipData.node?.id) {
+            setNode(skipData.node)
+            setPhase('quiz')
+            return
+          }
+        }
+      }
+      setNode(data.node)
       setPhase('quiz')
     } catch (e) {
       setError((e as Error).message)
@@ -481,7 +519,7 @@ function useServerQuiz() {
         const recRes = await fetch(`${API_URL}/api/user/recommendations?session_id=${sessionId}`)
         if (!recRes.ok) throw new Error(`HTTP ${recRes.status}`)
         const recData = await recRes.json()
-        setResults(recData.results ?? [])
+        setResults(mapBackendResults(recData.results ?? []))
         setPhase('results')
       } else {
         setNode(data.node)
@@ -1018,11 +1056,6 @@ function ProductionResultsScreen({ results, onRestart }: { results: OfferResult[
                   {top.Description && (
                     <p className="text-sm text-indigo-100 leading-relaxed whitespace-pre-line">{top.Description}</p>
                   )}
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
-                      Match score: {top.Score}
-                    </span>
-                  </div>
                   <button className="mt-5 w-full rounded-xl bg-white text-indigo-700 py-3 text-sm font-bold hover:bg-indigo-50 transition-colors active:scale-[0.98]">
                     Get started →
                   </button>
@@ -1035,12 +1068,7 @@ function ProductionResultsScreen({ results, onRestart }: { results: OfferResult[
                   <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Also a great fit</p>
                   {rest.map(offer => (
                     <div key={offer.ID} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <h2 className="text-sm font-semibold text-gray-800">{offer.Name}</h2>
-                        <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
-                          {offer.Score}
-                        </span>
-                      </div>
+                      <h2 className="text-sm font-semibold text-gray-800">{offer.Name}</h2>
                       {offer.Description && (
                         <p className="mt-1 text-xs text-gray-500 leading-relaxed whitespace-pre-line">{offer.Description}</p>
                       )}
