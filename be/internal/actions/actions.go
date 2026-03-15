@@ -19,7 +19,6 @@ var (
 
 func init() {
 	// Register the built-in appliers automatically
-	Register("delta", ApplyDelta)
 	Register("set", ApplySet)
 }
 
@@ -48,20 +47,6 @@ func Names() []string {
 	}
 	sort.Strings(names)
 	return names
-}
-
-// ApplyDelta adds Value to the current field (int) or toggles (bool)
-func ApplyDelta(field reflect.Value, action models.Action) {
-	switch field.Kind() {
-	case reflect.Int:
-		if f, ok := action.Value.(float64); ok {
-			field.SetInt(field.Int() + int64(f))
-		}
-	case reflect.Bool:
-		if b, ok := action.Value.(bool); ok {
-			field.SetBool(!b) // toggle
-		}
-	}
 }
 
 // ApplySet directly sets the field to Value

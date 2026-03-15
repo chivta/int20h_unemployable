@@ -31,74 +31,7 @@ func New() *Store {
 		Edges:   []models.Edge{},
 	}
 	
-	// Pre-seed some default offers based on the initial requirements
-	s.seedDefaultOffers()
-	
 	return s
-}
-
-func (s *Store) seedDefaultOffers() {
-	defaultOffers := []models.Offer{
-		{
-			ID: "offer_1", Name: "Weight Loss Starter (Home) — 4 тижні",
-			Description: "Digital: план схуднення вдома (20–30 хв)\nPhysical wellness kit: Home Fat-Burn Kit (resistance bands, скакалка, шейкер/пляшка, електроліти + healthy snack)",
-			Requirements: []models.Requirement{
-				{FieldName: "goal", MatchValue: "weight_loss", IsObligatory: true, Score: 10},
-				{FieldName: "context", MatchValue: "home", IsObligatory: false, Score: 5},
-			},
-		},
-		{
-			ID: "offer_2", Name: "Lean Strength Builder (Gym) — силові + прогресія",
-			Description: "Digital: програма для залу\nPhysical wellness kit: Gym Support Kit (wrist wraps/straps, mini loop band, компактний рушник, електроліти/протеїн-снек)",
-			Requirements: []models.Requirement{
-				{FieldName: "goal", MatchValue: "strength", IsObligatory: true, Score: 10},
-				{FieldName: "context", MatchValue: "gym", IsObligatory: false, Score: 5},
-			},
-		},
-		{
-			ID: "offer_3", Name: "Low-Impact Fat Burn — “суглоби friendly”",
-			Description: "Digital: low-impact план (коліна/спина friendly)\nPhysical wellness kit: Joint-Friendly Kit (knee sleeve/бандаж, massage ball, mini loop bands, cooling patch/recovery gel)",
-			Requirements: []models.Requirement{
-				{FieldName: "goal", MatchValue: "weight_loss", IsObligatory: false, Score: 5},
-				{FieldName: "constraints", MatchValue: "injury", IsObligatory: true, Score: 10},
-			},
-		},
-		{
-			ID: "offer_4", Name: "Run Your First 5K (Outdoor) — бігова програма",
-			Description: "Digital: підготовка до 5K (3 рази/тиж)\nPhysical wellness kit: Runner Starter Kit (electrolytes, reflective armband/safety light, blister kit, running belt)",
-			Requirements: []models.Requirement{
-				{FieldName: "goal", MatchValue: "endurance", IsObligatory: true, Score: 10},
-				{FieldName: "context", MatchValue: "outdoor", IsObligatory: false, Score: 5},
-			},
-		},
-		{
-			ID: "offer_5", Name: "Yoga & Mobility (Home) — гнучкість + спина/постава",
-			Description: "Digital: йога/мобільність 10–25 хв\nPhysical wellness kit: Mobility Kit (travel yoga mat або yoga strap, massage ball, mini foam roller)",
-			Requirements: []models.Requirement{
-				{FieldName: "goal", MatchValue: "flexibility", IsObligatory: true, Score: 10},
-				{FieldName: "preferences", MatchValue: "yoga", IsObligatory: false, Score: 5},
-			},
-		},
-		{
-			ID: "offer_6", Name: "Stress Reset Program — ментальний ресет + мікрозвички",
-			Description: "Digital: дихання/медитації/антистрес рутини\nPhysical wellness kit: Calm-Now Kit (eye mask, aroma roll-on/mini candle, tea sticks, stress ball/fidget, quick reset card)",
-			Requirements: []models.Requirement{
-				{FieldName: "goal", MatchValue: "stress_relief", IsObligatory: true, Score: 10},
-				{FieldName: "wellbeing", MatchValue: "poor", IsObligatory: false, Score: 5},
-			},
-		},
-		{
-			ID: "offer_7", Name: "Quick Fit Micro-Workouts — 10–15 хв щодня",
-			Description: "Digital: короткі щоденні тренування\nPhysical wellness kit: Micro-Workout Kit (slider discs, mini loop bands, шейкер/пляшка, mini routine card)",
-			Requirements: []models.Requirement{
-				{FieldName: "constraints", MatchValue: "time", IsObligatory: true, Score: 10},
-			},
-		},
-	}
-	
-	for _, o := range defaultOffers {
-		s.offers[o.ID] = o
-	}
 }
 
 // SaveNode creates or updates a node in the DAG.

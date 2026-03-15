@@ -5,6 +5,7 @@ type Requirement struct {
 	FieldName    string `json:"field_name"`
 	MatchValue   string `json:"match_value"`
 	IsObligatory bool   `json:"is_obligatory"`
+	IsMustNot    bool   `json:"is_must_not"`
 	Score        int    `json:"score"`
 }
 

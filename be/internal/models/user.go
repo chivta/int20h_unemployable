@@ -9,7 +9,7 @@ import (
 type UserData struct {
 	Age         int    `json:"age"`
 	Gender      string `json:"gender" enum:"male,female,unspecified"`
-	Goal        string `json:"goal" enum:"weight_loss,strength,endurance,flexibility,stress_relief"`
+	Goal        string `json:"goal" enum:"weight_loss,strength,endurance,flexibility,stress_relief,health"`
 	Context     string `json:"context" enum:"home,gym,outdoor"`
 	Constraints string `json:"constraints" enum:"time,injury,none"`
 	Level       string `json:"level" enum:"beginner,intermediate,advanced"`

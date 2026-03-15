@@ -76,10 +76,12 @@ func main() {
 	user.Get("/recommendations", userHandler.GetRecommendations)
 	user.Post("/purchase", userHandler.MarkPurchase)
 
+	app.Static("/", "../fe/static")
 
 	addr := ":8080"
 	fmt.Printf("🚀 Server started at http://localhost%s\n", addr)
-
+	fmt.Println("   Admin:  http://localhost:8080/admin.html")
+	fmt.Println("   User:   http://localhost:8080/index.html")
 	log.Fatal(app.Listen(addr))
 }
 

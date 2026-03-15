@@ -51,8 +51,17 @@ func CalculateRecommendations(user models.UserData, offers []models.Offer) []mod
 			}
 
 			if matches {
+				if req.IsMustNot {
+					// User matches a "must not" value → disqualify
+					disqualified = true
+					break
+				}
 				score += req.Score
 			} else {
+				if req.IsMustNot {
+					// User does NOT match a "must not" value → good, no penalty
+					continue
+				}
 				if req.IsObligatory {
 					disqualified = true
 					break
