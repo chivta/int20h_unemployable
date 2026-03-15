@@ -10,16 +10,19 @@ export interface FullState {
   selection: SelectionState
   validationWarnings: string[]
   showValidationBanner: boolean
+  isDirty: boolean
 }
 
 function makeInitialApp(): AppState {
   return {
     dag: {
       root: 'q1',
+      end: 'end',
       nodes: {
-        q1: { id: 'q1', text: 'What is your primary fitness goal?', answers: ['a1'] },
-        q2: { id: 'q2', text: 'How many days per week can you train?', answers: ['a2'] },
-        q3: { id: 'q3', text: 'Do you have access to a gym?', answers: [] },
+        q1: { id: 'q1', text: 'What is your primary fitness goal?', answers: ['a1'], questionType: 'single', nextNodeId: null },
+        q2: { id: 'q2', text: 'How many days per week can you train?', answers: ['a2'], questionType: 'single', nextNodeId: null },
+        q3: { id: 'q3', text: 'Do you have access to a gym?', answers: [], questionType: 'single', nextNodeId: null },
+        end: { id: 'end', text: 'End', answers: [], questionType: 'single', nextNodeId: null },
       },
       edges: {
         a1: { id: 'a1', label: 'Next', next: 'q2', weights: { starter: 1, premium: 1 }, actions: [] },
@@ -43,6 +46,7 @@ function makeInitialState(): FullState {
     selection: { type: 'none' },
     validationWarnings: [],
     showValidationBanner: false,
+    isDirty: false,
   }
 }
 
@@ -51,21 +55,44 @@ export const initialState: FullState = makeInitialState()
 export function reducer(state: FullState, action: Action): FullState {
   switch (action.type) {
     case 'SET_ROOT': {
-      return { ...state, app: { ...state.app, dag: { ...state.app.dag, root: action.nodeId } } }
+      return { ...state, isDirty: true, app: { ...state.app, dag: { ...state.app.dag, root: action.nodeId } } }
     }
 
     case 'LOAD_STATE': {
       seedCounters(action.state.dag)
+      // Normalize: ensure every node has a questionType (for configs saved before this field existed)
+      const normalizedNodes = Object.fromEntries(
+        Object.entries(action.state.dag.nodes).map(([id, node]) => [
+          id,
+          { ...node, questionType: node.questionType ?? 'single', nextNodeId: node.nextNodeId ?? null },
+        ])
+      )
+      // Normalize: ensure end node exists (for configs saved before this field existed)
+      const loadedEnd = action.state.dag.end
+      const endNodeMissing = !loadedEnd || !normalizedNodes[loadedEnd]
+      if (endNodeMissing) {
+        normalizedNodes['end'] = { id: 'end', text: 'End', answers: [], questionType: 'single', nextNodeId: null }
+      }
+      const resolvedEnd = endNodeMissing ? 'end' : loadedEnd
+      const normalizedState: AppState = {
+        ...action.state,
+        dag: { ...action.state.dag, end: resolvedEnd, nodes: normalizedNodes },
+      }
       return {
         ...state,
-        app: action.state,
-        positions: computeLayout(action.state.dag),
+        app: normalizedState,
+        positions: computeLayout(normalizedState.dag),
         selection: { type: 'none' },
+        isDirty: false,
       }
     }
 
     case 'RESET': {
       return makeInitialState()
+    }
+
+    case 'MARK_SAVED': {
+      return { ...state, isDirty: false }
     }
 
     case 'ADD_NODE': {
@@ -74,10 +101,11 @@ export function reducer(state: FullState, action: Action): FullState {
       const pos = action.position ?? { x: 80 + (n % 4) * 260, y: 80 + Math.floor(n / 4) * 160 }
       const dag: DagData = {
         ...state.app.dag,
-        nodes: { ...state.app.dag.nodes, [id]: { id, text: '', answers: [] } },
+        nodes: { ...state.app.dag.nodes, [id]: { id, text: '', answers: [], questionType: 'single', nextNodeId: null } },
       }
       return {
         ...state,
+        isDirty: true,
         app: { ...state.app, dag },
         positions: { ...state.positions, [id]: pos },
         selection: { type: 'node', nodeId: id },
@@ -91,10 +119,11 @@ export function reducer(state: FullState, action: Action): FullState {
         ...state.app.dag,
         nodes: { ...state.app.dag.nodes, [action.nodeId]: { ...node, text: action.text } },
       }
-      return { ...state, app: { ...state.app, dag } }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     case 'DELETE_NODE': {
+      if (action.nodeId === state.app.dag.root || action.nodeId === state.app.dag.end) return state
       const node = state.app.dag.nodes[action.nodeId]
       if (!node) return state
 
@@ -122,7 +151,8 @@ export function reducer(state: FullState, action: Action): FullState {
 
       return {
         ...state,
-        app: { ...state.app, dag: { root: newRoot, nodes: newNodes, edges: newEdges } },
+        isDirty: true,
+        app: { ...state.app, dag: { root: newRoot, end: state.app.dag.end, nodes: newNodes, edges: newEdges } },
         positions: newPositions,
         selection: { type: 'none' },
       }
@@ -139,7 +169,7 @@ export function reducer(state: FullState, action: Action): FullState {
         nodes: { ...state.app.dag.nodes, [action.nodeId]: { ...node, answers: [...node.answers, edgeId] } },
         edges: { ...state.app.dag.edges, [edgeId]: { id: edgeId, label: 'New answer', next: null, weights, actions: [] } },
       }
-      return { ...state, app: { ...state.app, dag } }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     case 'UPDATE_ANSWER_LABEL': {
@@ -149,7 +179,7 @@ export function reducer(state: FullState, action: Action): FullState {
         ...state.app.dag,
         edges: { ...state.app.dag.edges, [action.edgeId]: { ...edge, label: action.label } },
       }
-      return { ...state, app: { ...state.app, dag } }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     case 'SET_ANSWER_NEXT': {
@@ -159,7 +189,7 @@ export function reducer(state: FullState, action: Action): FullState {
         ...state.app.dag,
         edges: { ...state.app.dag.edges, [action.edgeId]: { ...edge, next: action.next } },
       }
-      return { ...state, app: { ...state.app, dag } }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     case 'SET_ANSWER_WEIGHT': {
@@ -172,7 +202,7 @@ export function reducer(state: FullState, action: Action): FullState {
           [action.edgeId]: { ...edge, weights: { ...edge.weights, [action.offerId]: action.weight } },
         },
       }
-      return { ...state, app: { ...state.app, dag } }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     case 'DELETE_ANSWER': {
@@ -188,7 +218,7 @@ export function reducer(state: FullState, action: Action): FullState {
         },
         edges: newEdges,
       }
-      return { ...state, app: { ...state.app, dag } }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     case 'REORDER_ANSWERS': {
@@ -198,7 +228,7 @@ export function reducer(state: FullState, action: Action): FullState {
         ...state.app.dag,
         nodes: { ...state.app.dag.nodes, [action.nodeId]: { ...node, answers: action.answers } },
       }
-      return { ...state, app: { ...state.app, dag } }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     case 'INSERT_NODE_ON_EDGE': {
@@ -216,7 +246,7 @@ export function reducer(state: FullState, action: Action): FullState {
         ...state.app.dag,
         nodes: {
           ...state.app.dag.nodes,
-          [newNodeId]: { id: newNodeId, text: action.text || 'New Question', answers: [newEdgeId] },
+          [newNodeId]: { id: newNodeId, text: action.text || 'New Question', answers: [newEdgeId], questionType: 'single', nextNodeId: null },
         },
         edges: {
           ...state.app.dag.edges,
@@ -231,6 +261,7 @@ export function reducer(state: FullState, action: Action): FullState {
 
       return {
         ...state,
+        isDirty: true,
         app: { ...state.app, dag },
         positions: { ...state.positions, [newNodeId]: newPos },
         selection: { type: 'node', nodeId: newNodeId },
@@ -245,6 +276,7 @@ export function reducer(state: FullState, action: Action): FullState {
       }
       return {
         ...state,
+        isDirty: true,
         app: {
           ...state.app,
           dag: { ...state.app.dag, edges: newEdges },
@@ -258,6 +290,7 @@ export function reducer(state: FullState, action: Action): FullState {
       if (!offer) return state
       return {
         ...state,
+        isDirty: true,
         app: { ...state.app, offers: { ...state.app.offers, [action.offerId]: { ...offer, name: action.name } } },
       }
     }
@@ -273,6 +306,7 @@ export function reducer(state: FullState, action: Action): FullState {
       }
       return {
         ...state,
+        isDirty: true,
         app: { ...state.app, dag: { ...state.app.dag, edges: newEdges }, offers: newOffers },
       }
     }
@@ -304,7 +338,7 @@ export function reducer(state: FullState, action: Action): FullState {
         ...state.app.dag,
         edges: { ...state.app.dag.edges, [action.edgeId]: { ...edge, actions: action.actions } },
       }
-      return { ...state, app: { ...state.app, dag } }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     case 'SET_VALIDATION': {
@@ -313,6 +347,49 @@ export function reducer(state: FullState, action: Action): FullState {
 
     case 'DISMISS_VALIDATION': {
       return { ...state, showValidationBanner: false }
+    }
+
+    case 'SET_QUESTION_TYPE': {
+      const node = state.app.dag.nodes[action.nodeId]
+      if (!node) return state
+      let updatedNode = { ...node, questionType: action.questionType }
+      if (action.questionType === 'multi') {
+        // Auto-derive nextNodeId from the first answer that has a non-null next
+        const firstConnectedEdge = node.answers
+          .map(eid => state.app.dag.edges[eid])
+          .find(e => e?.next)
+        updatedNode = { ...updatedNode, nextNodeId: firstConnectedEdge?.next ?? null }
+      } else if (action.questionType === 'single') {
+        // When switching back to single, copy nextNodeId back as the next of the first answer
+        if (node.nextNodeId && node.answers.length > 0) {
+          const firstEdgeId = node.answers[0]
+          const firstEdge = state.app.dag.edges[firstEdgeId]
+          if (firstEdge) {
+            const dag: DagData = {
+              ...state.app.dag,
+              nodes: { ...state.app.dag.nodes, [action.nodeId]: { ...updatedNode, nextNodeId: null } },
+              edges: { ...state.app.dag.edges, [firstEdgeId]: { ...firstEdge, next: node.nextNodeId } },
+            }
+            return { ...state, isDirty: true, app: { ...state.app, dag } }
+          }
+        }
+        updatedNode = { ...updatedNode, nextNodeId: null }
+      }
+      const dag: DagData = {
+        ...state.app.dag,
+        nodes: { ...state.app.dag.nodes, [action.nodeId]: updatedNode },
+      }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
+    }
+
+    case 'SET_NODE_NEXT': {
+      const node = state.app.dag.nodes[action.nodeId]
+      if (!node) return state
+      const dag: DagData = {
+        ...state.app.dag,
+        nodes: { ...state.app.dag.nodes, [action.nodeId]: { ...node, nextNodeId: action.nextNodeId } },
+      }
+      return { ...state, isDirty: true, app: { ...state.app, dag } }
     }
 
     default:

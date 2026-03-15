@@ -12,6 +12,7 @@ interface BackendEdge {
   match_value: string
   actions: BackendAction[]
   to_node_id: string
+  weights: Record<string, number>
 }
 
 interface BackendNode {
@@ -35,6 +36,7 @@ interface BackendOffer {
 
 export interface BackendConfig {
   root?: string
+  end?: string
   nodes: Record<string, BackendNode>
   offers: Record<string, BackendOffer>
   layout?: Record<string, { x: number; y: number }>
@@ -57,22 +59,25 @@ export function toBackendConfig(state: AppState, positions: Record<string, Posit
   const backendNodes: Record<string, BackendNode> = {}
 
   for (const [nodeId, node] of Object.entries(state.dag.nodes)) {
+    const isMulti = node.questionType === 'multi'
     const edges: BackendEdge[] = node.answers
       .map(edgeId => state.dag.edges[edgeId])
       .filter((e): e is DagEdge => Boolean(e))
       .map(edge => ({
         match_value: edge.label,
-        to_node_id: edge.next ?? '',
+        // For multi-choice nodes, all answers share the same outgoing node (nextNodeId)
+        to_node_id: isMulti ? (node.nextNodeId ?? '') : (edge.next ?? ''),
         actions: (edge.actions ?? []).map(a => ({
           type: a.type,
           field_name: toSnakeCase(a.fieldName),
           value: a.value,
         })),
+        weights: edge.weights ?? {},
       }))
 
     backendNodes[nodeId] = {
       id: node.id,
-      type: 'question',
+      type: node.questionType === 'multi' ? 'multi_choice' : 'question',
       content: node.text,
       edges,
     }
@@ -83,13 +88,19 @@ export function toBackendConfig(state: AppState, positions: Record<string, Posit
     backendOffers[offerId] = {
       id: offer.id,
       name: offer.name,
-      description: '',
-      requirements: [],
+      description: offer.description ?? '',
+      requirements: (offer.requirements ?? []).map(r => ({
+        field_name: r.field_name,
+        match_value: r.match_value,
+        is_obligatory: r.is_obligatory,
+        score: r.score,
+      })),
     }
   }
 
   return {
     root: state.dag.root,
+    end: state.dag.end,
     nodes: backendNodes,
     offers: backendOffers,
     layout: positions,
@@ -117,29 +128,51 @@ export function fromBackendConfig(config: BackendConfig): { state: AppState; pos
         next: beEdge.to_node_id || null,
         weights: {},
         actions: (beEdge.actions ?? []).map(a => ({
-          type: 'set' as const,
+          type: (a.type === 'delta' ? 'delta' : 'set') as 'set' | 'delta',
           fieldName: toCamelCase(a.field_name),
           value: a.value,
         })),
       }
     })
 
+    const isMultiChoice = node.type === 'multi_choice'
+    // For multi-choice nodes, derive nextNodeId from the first edge's to_node_id
+    const nextNodeId = isMultiChoice ? (node.edges[0]?.to_node_id || null) : null
     nodes[nodeId] = {
       id: nodeId,
       text: node.content,
       answers: answerIds,
+      questionType: isMultiChoice ? 'multi' : 'single',
+      nextNodeId,
     }
   }
 
   const offers: AppState['offers'] = {}
   for (const [offerId, offer] of Object.entries(config.offers ?? {})) {
-    offers[offerId] = { id: offer.id, name: offer.name }
+    offers[offerId] = {
+      id: offer.id,
+      name: offer.name,
+      description: offer.description,
+      requirements: offer.requirements,
+    }
   }
 
   // Determine root: node with no incoming edges
   const allTargets = new Set(Object.values(edges).map(e => e.next).filter(Boolean))
   const rootCandidates = Object.keys(nodes).filter(id => !allTargets.has(id))
-  const root = rootCandidates[0] ?? Object.keys(nodes)[0] ?? ''
+  const root = config.root ?? rootCandidates[0] ?? Object.keys(nodes)[0] ?? ''
+
+  // Determine end: use config.end if present and valid, else infer as node with no outgoing edges
+  let end = config.end && nodes[config.end] ? config.end : ''
+  if (!end) {
+    // Find nodes whose answers all have empty to_node_id, or have no answers
+    const endCandidates = Object.keys(nodes).filter(id => {
+      const n = nodes[id]
+      return n.answers.length === 0 || n.answers.every(eid => !edges[eid]?.next)
+    })
+    // Prefer a candidate that is not the root
+    end = endCandidates.find(id => id !== root) ?? endCandidates[0] ?? Object.keys(nodes)[0] ?? ''
+  }
 
   const positions: Record<string, Position> = {}
   if (config.layout) {
@@ -152,7 +185,7 @@ export function fromBackendConfig(config: BackendConfig): { state: AppState; pos
 
   return {
     state: {
-      dag: { root, nodes, edges },
+      dag: { root, end, nodes, edges },
       offers,
       meta: { version: 1, updatedAt: new Date().toISOString(), updatedBy: 'admin' },
     },
@@ -161,7 +194,7 @@ export function fromBackendConfig(config: BackendConfig): { state: AppState; pos
 }
 
 function toSnakeCase(s: string): string {
-  return s.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
+  return s.charAt(0).toLowerCase() + s.slice(1).replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
 }
 
 function toCamelCase(s: string): string {

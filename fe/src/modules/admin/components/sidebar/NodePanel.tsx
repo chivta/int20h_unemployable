@@ -43,12 +43,61 @@ export function NodePanel({ nodeId }: { nodeId: string }) {
       </div>
 
       <div>
+        <Label>Question type</Label>
+        <div className="mt-1 flex rounded border border-gray-300 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'SET_QUESTION_TYPE', nodeId, questionType: 'single' })}
+            className={[
+              'flex-1 py-1 text-xs font-medium transition-colors',
+              (node.questionType ?? 'single') === 'single'
+                ? 'bg-blue-500 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50',
+            ].join(' ')}
+          >
+            Single choice
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'SET_QUESTION_TYPE', nodeId, questionType: 'multi' })}
+            className={[
+              'flex-1 py-1 text-xs font-medium transition-colors border-l border-gray-300',
+              (node.questionType ?? 'single') === 'multi'
+                ? 'bg-blue-500 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50',
+            ].join(' ')}
+          >
+            Multi choice
+          </button>
+        </div>
+      </div>
+
+      <div>
         <div className="mb-1.5 flex items-center justify-between">
           <Label>Answers</Label>
           <Button size="sm" variant="ghost" onClick={() => dispatch({ type: 'ADD_ANSWER', nodeId })}>
             <Plus size={12} /> Add
           </Button>
         </div>
+
+        {/* Next question selector for multi-choice nodes */}
+        {(node.questionType ?? 'single') === 'multi' && (
+          <div className="mb-2">
+            <label className="text-[10px] text-gray-500">Next question</label>
+            <select
+              className="mt-0.5 w-full rounded border border-gray-300 px-2 py-1 text-xs"
+              value={node.nextNodeId ?? ''}
+              onChange={e => dispatch({ type: 'SET_NODE_NEXT', nodeId, nextNodeId: e.target.value || null })}
+            >
+              <option value="">— terminal —</option>
+              {Object.values(state.app.dag.nodes)
+                .filter(n => n.id !== nodeId)
+                .map(n => (
+                  <option key={n.id} value={n.id}>{n.id}: {n.text.slice(0, 30)}</option>
+                ))}
+            </select>
+          </div>
+        )}
 
         <div className="space-y-2">
           {node.answers.map((edgeId, i) => {
@@ -82,21 +131,24 @@ export function NodePanel({ nodeId }: { nodeId: string }) {
                   className="mb-1"
                 />
 
-                <div className="mb-1">
-                  <label className="text-[10px] text-gray-500">Next node</label>
-                  <select
-                    className="mt-0.5 w-full rounded border border-gray-300 px-2 py-1 text-xs"
-                    value={edge.next ?? ''}
-                    onChange={e => dispatch({ type: 'SET_ANSWER_NEXT', edgeId, next: e.target.value || null })}
-                  >
-                    <option value="">— terminal —</option>
-                    {Object.values(state.app.dag.nodes)
-                      .filter(n => n.id !== nodeId)
-                      .map(n => (
-                        <option key={n.id} value={n.id}>{n.id}: {n.text.slice(0, 30)}</option>
-                      ))}
-                  </select>
-                </div>
+                {/* Next node selector — hidden for multi-choice (uses node-level nextNodeId instead) */}
+                {(node.questionType ?? 'single') === 'single' && (
+                  <div className="mb-1">
+                    <label className="text-[10px] text-gray-500">Next node</label>
+                    <select
+                      className="mt-0.5 w-full rounded border border-gray-300 px-2 py-1 text-xs"
+                      value={edge.next ?? ''}
+                      onChange={e => dispatch({ type: 'SET_ANSWER_NEXT', edgeId, next: e.target.value || null })}
+                    >
+                      <option value="">— terminal —</option>
+                      {Object.values(state.app.dag.nodes)
+                        .filter(n => n.id !== nodeId)
+                        .map(n => (
+                          <option key={n.id} value={n.id}>{n.id}: {n.text.slice(0, 30)}</option>
+                        ))}
+                    </select>
+                  </div>
+                )}
 
                 {offers.length > 0 && (
                   <div className="space-y-0.5">
@@ -121,7 +173,7 @@ export function NodePanel({ nodeId }: { nodeId: string }) {
       </div>
 
       <div className="space-y-1 border-t border-gray-200 pt-3">
-        {!hasIncoming && state.app.dag.root !== nodeId && (
+        {!hasIncoming && state.app.dag.root !== nodeId && state.app.dag.end !== nodeId && (
           <Button
             size="sm"
             variant="outline"
@@ -136,8 +188,16 @@ export function NodePanel({ nodeId }: { nodeId: string }) {
           variant="outline"
           className="w-full text-red-600 hover:bg-red-50 border-red-200"
           onClick={() => dispatch({ type: 'DELETE_NODE', nodeId })}
-          disabled={hasIncoming}
-          title={hasIncoming ? 'Cannot delete: other answers point to this node' : undefined}
+          disabled={hasIncoming || nodeId === state.app.dag.root || nodeId === state.app.dag.end}
+          title={
+            nodeId === state.app.dag.root
+              ? 'Cannot delete: this is the root node'
+              : nodeId === state.app.dag.end
+                ? 'Cannot delete: this is the end node'
+                : hasIncoming
+                  ? 'Cannot delete: other answers point to this node'
+                  : undefined
+          }
         >
           <Trash2 size={12} /> Delete node
         </Button>

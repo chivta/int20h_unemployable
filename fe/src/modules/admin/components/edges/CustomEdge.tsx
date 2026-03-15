@@ -26,7 +26,7 @@ export function CustomEdge({
 
   return (
     <>
-      <BaseEdge id={id} path={edgePath} style={{ stroke: selected || isSelectedForInsert ? '#3b82f6' : '#64748b', strokeWidth: 2 }} />
+      <BaseEdge id={id} path={edgePath} style={{ stroke: selected || isSelectedForInsert ? '#3b82f6' : '#64748b', strokeWidth: 2, cursor: 'pointer' }} />
       <EdgeLabelRenderer>
         <div
           style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
