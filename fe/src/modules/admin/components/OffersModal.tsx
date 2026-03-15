@@ -13,7 +13,7 @@ function emptyOffer(): Offer {
 }
 
 function emptyReq(): OfferRequirement {
-  return { field_name: '', match_value: '', is_obligatory: false, score: 5 }
+  return { field_name: '', match_value: '', is_obligatory: false, is_must_not: false, score: 5 }
 }
 
 interface OfferFormProps {
@@ -83,6 +83,17 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
       </div>
 
       <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Buy URL</label>
+        <input
+          className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={offer.url ?? ''}
+          onChange={e => setField('url', e.target.value)}
+          placeholder="https://…"
+          type="url"
+        />
+      </div>
+
+      <div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-gray-600">Requirements</span>
           <button onClick={addReq} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
@@ -98,7 +109,7 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
           {requirements.map((req, i) => {
             const valueOpts = schema[req.field_name]?.options ?? []
             return (
-              <div key={i} className="rounded border border-gray-200 bg-gray-50 p-3 grid grid-cols-[1fr_1fr_80px_60px_28px] gap-2 items-center">
+              <div key={i} className="rounded border border-gray-200 bg-gray-50 p-3 grid grid-cols-[1fr_1fr_80px_60px_60px_28px] gap-2 items-center">
                 <select
                   className="rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={req.field_name}
@@ -144,6 +155,16 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
                   Req
                 </label>
 
+                <label className="flex items-center gap-1 text-xs text-red-500 cursor-pointer select-none justify-center" title="Disqualify if user matches this value">
+                  <input
+                    type="checkbox"
+                    checked={req.is_must_not ?? false}
+                    onChange={e => setReq(i, { ...req, is_must_not: e.target.checked })}
+                    className="rounded accent-red-500"
+                  />
+                  ✕
+                </label>
+
                 <button onClick={() => removeReq(i)} className="text-gray-400 hover:text-red-500 flex items-center justify-center">
                   <Trash2 size={13} />
                 </button>
@@ -152,7 +173,7 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
           })}
         </div>
         {requirements.length > 0 && (
-          <p className="mt-1 text-xs text-gray-400">Columns: Field · Value · Score · Required · Delete</p>
+          <p className="mt-1 text-xs text-gray-400">Columns: Field · Value · Score · Required · Must Not · Delete</p>
         )}
       </div>
 

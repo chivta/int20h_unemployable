@@ -30,6 +30,7 @@ interface OfferResult {
   Name: string
   Description: string
   Score: number
+  URL?: string
 }
 
 // Map raw backend JSON (lowercase keys) to OfferResult
@@ -41,6 +42,7 @@ function mapBackendResults(raw: unknown[]): OfferResult[] {
       Name: (o.name ?? o.Name ?? '') as string,
       Description: (o.description ?? o.Description ?? '') as string,
       Score: (o.score ?? o.Score ?? 0) as number,
+      URL: (o.url ?? o.URL ?? '') as string || undefined,
     }
   })
 }
@@ -122,6 +124,7 @@ function scoreOffers(
         Name: offer.name,
         Description: offer.description ?? '',
         Score: accumulatedScores[offer.id] ?? 0,
+        URL: offer.url || undefined,
       })
     } else {
       let score = 0
@@ -129,10 +132,10 @@ function scoreOffers(
       for (const req of offer.requirements ?? []) {
         const matched = String(userData[req.field_name] ?? '') === String(req.match_value)
         if (matched) {
+          if (req.is_must_not) { disqualified = true; break }
           score += req.score
-        } else if (req.is_obligatory) {
-          disqualified = true
-          break
+        } else {
+          if (req.is_obligatory) { disqualified = true; break }
         }
       }
       results.push({
@@ -140,6 +143,7 @@ function scoreOffers(
         Name: offer.name,
         Description: offer.description ?? '',
         Score: disqualified ? -Infinity : score,
+        URL: offer.url || undefined,
       })
     }
   }
@@ -568,6 +572,16 @@ function ResultsScreen({ results, onRestart, isLocal }: { results: OfferResult[]
               </div>
               {offer.Description && (
                 <p className="mt-1 text-sm text-gray-600">{offer.Description}</p>
+              )}
+              {offer.URL && (
+                <a
+                  href={offer.URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                >
+                  Buy now →
+                </a>
               )}
             </div>
           ))
@@ -1025,9 +1039,16 @@ function ProductionResultsScreen({ results, onRestart }: { results: OfferResult[
                   {top.Description && (
                     <p className="text-sm text-indigo-100 leading-relaxed whitespace-pre-line">{top.Description}</p>
                   )}
-                  <button className="mt-5 w-full rounded-xl bg-white text-indigo-700 py-3 text-sm font-bold hover:bg-indigo-50 transition-colors active:scale-[0.98]">
-                    Get started →
-                  </button>
+                  {top.URL && (
+                    <a
+                      href={top.URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-5 block w-full rounded-xl bg-white text-indigo-700 py-3 text-sm font-bold text-center hover:bg-indigo-50 transition-colors active:scale-[0.98]"
+                    >
+                      Buy now →
+                    </a>
+                  )}
                 </div>
               )}
 
@@ -1040,6 +1061,16 @@ function ProductionResultsScreen({ results, onRestart }: { results: OfferResult[
                       <h2 className="text-sm font-semibold text-gray-800">{offer.Name}</h2>
                       {offer.Description && (
                         <p className="mt-1 text-xs text-gray-500 leading-relaxed whitespace-pre-line">{offer.Description}</p>
+                      )}
+                      {offer.URL && (
+                        <a
+                          href={offer.URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-block rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                        >
+                          Buy now →
+                        </a>
                       )}
                     </div>
                   ))}

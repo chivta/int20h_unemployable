@@ -31,6 +31,7 @@ export interface OfferRequirement {
   field_name: string
   match_value: string
   is_obligatory: boolean
+  is_must_not: boolean
   score: number
 }
 
@@ -38,6 +39,7 @@ export interface Offer {
   id: string
   name: string
   description?: string
+  url?: string
   requirements?: OfferRequirement[]
 }
 

@@ -26,10 +26,12 @@ interface BackendOffer {
   id: string
   name: string
   description: string
+  url?: string
   requirements: Array<{
     field_name: string
     match_value: string
     is_obligatory: boolean
+    is_must_not: boolean
     score: number
   }>
 }
@@ -121,10 +123,12 @@ export function toBackendConfig(state: AppState, positions: Record<string, Posit
       id: offer.id,
       name: offer.name,
       description: offer.description ?? '',
+      ...(offer.url ? { url: offer.url } : {}),
       requirements: (offer.requirements ?? []).map(r => ({
         field_name: r.field_name,
         match_value: r.match_value,
         is_obligatory: r.is_obligatory,
+        is_must_not: r.is_must_not ?? false,
         score: r.score,
       })),
     }
@@ -192,6 +196,7 @@ export function fromBackendConfig(config: BackendConfig): { state: AppState; pos
       id: offer.id,
       name: offer.name,
       description: offer.description,
+      url: offer.url,
       requirements: offer.requirements,
     }
   }
