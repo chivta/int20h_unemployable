@@ -156,7 +156,7 @@ export function fromBackendConfig(config: BackendConfig): { state: AppState; pos
         next: beEdge.to_node_id || null,
         weights: {},
         actions: (beEdge.actions ?? []).map(a => ({
-          type: (a.type === 'delta' ? 'delta' : 'set') as 'set' | 'delta',
+          type: 'set' as const,
           fieldName: toCamelCase(a.field_name),
           value: a.value,
         })),

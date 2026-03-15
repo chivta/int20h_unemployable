@@ -102,12 +102,6 @@ function applyActions(userData: UserData, actions: BackendAction[]): UserData {
     const field = action.field_name
     if (action.type === 'set') {
       next[field] = action.value
-    } else if (action.type === 'delta') {
-      const current = next[field]
-      if (typeof current === 'number') {
-        next[field] = current + Number(action.value)
-      }
-      // skip delta on non-numeric fields
     }
   }
   return next

@@ -35,7 +35,7 @@ func applyActionsToUserData(userData models.UserData, acts []models.Action) mode
 		}
 		actionType := action.Type
 		if actionType == "" {
-			actionType = "delta"
+			actionType = "set"
 		}
 		if applier, ok := actions.Get(actionType); ok {
 			applier(field, action)

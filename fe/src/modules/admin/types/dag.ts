@@ -7,7 +7,7 @@ export interface DagNode {
 }
 
 export interface EdgeAction {
-  type: 'set' | 'delta'
+  type: 'set'
   fieldName: string
   value: string | number
 }

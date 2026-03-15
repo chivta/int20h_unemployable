@@ -2,12 +2,11 @@ package models
 
 // Action represents a state mutation applied when traversing an edge.
 // Type determines how Value is applied to FieldName:
-//   - "delta": adds Value to the current field value (numeric) or toggles (bool)
-//   - "set":   directly sets the field to Value
+//   - "set": directly sets the field to Value
 //
 // This is extensible — add new Type values + logic in store.ApplyActions.
 type Action struct {
-	Type      string      `json:"type"`       // "delta", "set", etc.
+	Type      string      `json:"type"`       // "set", etc.
 	FieldName string      `json:"field_name"`
 	Value     interface{} `json:"value"`
 }

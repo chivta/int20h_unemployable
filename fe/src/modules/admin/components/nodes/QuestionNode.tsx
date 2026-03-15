@@ -69,7 +69,7 @@ export function QuestionNode({ data }: NodeProps & { data: QuestionRFData }) {
     const firstField = fieldNames[0] ?? ''
     const firstSchema = schema?.[firstField]
     const defaultValue = firstSchema?.type === 'enum' ? (firstSchema.options?.[0] ?? '') : 0
-    const defaultType: EdgeAction['type'] = isMulti ? 'delta' : 'set'
+    const defaultType: EdgeAction['type'] = 'set'
     updateActions([...actions, { type: defaultType, fieldName: firstField, value: defaultValue }])
   }
 
@@ -335,7 +335,6 @@ export function QuestionNode({ data }: NodeProps & { data: QuestionRFData }) {
                                 onChange={e => updateAction(i, { type: e.target.value as EdgeAction['type'] })}
                               >
                                 <option value="set">set</option>
-                                <option value="delta">delta</option>
                               </select>
                             </div>
                           </div>

@@ -113,7 +113,7 @@ func (s *Store) ApplyActions(incomingActions []models.Action) models.UserData {
 
 		actionType := action.Type
 		if actionType == "" {
-			actionType = "delta" // default for backwards compatibility
+			actionType = "set"
 		}
 
 		if applier, ok := actions.Get(actionType); ok {
