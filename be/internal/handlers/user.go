@@ -26,7 +26,7 @@ type processInput struct {
 
 // GetState returns the start node and current user state.
 func (h *UserHandler) GetState(c *fiber.Ctx) error {
-	startNode, _ := h.Store.GetNode("start")
+	startNode, _ := h.Store.GetNode(h.Store.GetRootNodeID())
 	return c.JSON(fiber.Map{
 		"node": startNode,
 		"user": h.Store.GetUserState(),
@@ -77,7 +77,7 @@ func (h *UserHandler) Process(c *fiber.Ctx) error {
 // StartSession creates a new quiz session and resets user state.
 func (h *UserHandler) StartSession(c *fiber.Ctx) error {
 	userState := h.Store.ResetUserState()
-	startNode, _ := h.Store.GetNode("start")
+	startNode, _ := h.Store.GetNode(h.Store.GetRootNodeID())
 
 	sessionID := uuid.New().String()
 

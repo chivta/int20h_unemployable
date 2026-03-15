@@ -1,4 +1,4 @@
-import type { AppState } from '../types/dag'
+import type { AppState, EdgeAction } from '../types/dag'
 import type { Position } from '../types/ui'
 
 export type Action =
@@ -23,5 +23,6 @@ export type Action =
   | { type: 'SELECT_NODE'; nodeId: string }
   | { type: 'SELECT_EDGE'; edgeId: string }
   | { type: 'DESELECT' }
+  | { type: 'SET_EDGE_ACTIONS'; edgeId: string; actions: EdgeAction[] }
   | { type: 'SET_VALIDATION'; warnings: string[] }
   | { type: 'DISMISS_VALIDATION' }

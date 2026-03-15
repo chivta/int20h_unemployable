@@ -22,8 +22,8 @@ function makeInitialApp(): AppState {
         q3: { id: 'q3', text: 'Do you have access to a gym?', answers: [] },
       },
       edges: {
-        a1: { id: 'a1', label: 'Next', next: 'q2', weights: { starter: 1, premium: 1 } },
-        a2: { id: 'a2', label: 'Next', next: 'q3', weights: { starter: 1, premium: 1 } },
+        a1: { id: 'a1', label: 'Next', next: 'q2', weights: { starter: 1, premium: 1 }, actions: [] },
+        a2: { id: 'a2', label: 'Next', next: 'q3', weights: { starter: 1, premium: 1 }, actions: [] },
       },
     },
     offers: {
@@ -95,15 +95,27 @@ export function reducer(state: FullState, action: Action): FullState {
     }
 
     case 'DELETE_NODE': {
-      const hasIncoming = Object.values(state.app.dag.edges).some(e => e.next === action.nodeId)
-      if (hasIncoming) return state
       const node = state.app.dag.nodes[action.nodeId]
       if (!node) return state
 
-      const newNodes = { ...state.app.dag.nodes }
-      delete newNodes[action.nodeId]
+      // collect all edge IDs to remove: outgoing answers + incoming edges pointing to this node
+      const incomingEdgeIds = Object.entries(state.app.dag.edges)
+        .filter(([, e]) => e.next === action.nodeId)
+        .map(([id]) => id)
+
       const newEdges = { ...state.app.dag.edges }
       for (const edgeId of node.answers) delete newEdges[edgeId]
+      for (const edgeId of incomingEdgeIds) delete newEdges[edgeId]
+
+      // remove incoming edge IDs from their source nodes' answers arrays
+      const newNodes = { ...state.app.dag.nodes }
+      delete newNodes[action.nodeId]
+      for (const [nodeId, n] of Object.entries(newNodes)) {
+        if (n.answers.some(id => incomingEdgeIds.includes(id))) {
+          newNodes[nodeId] = { ...n, answers: n.answers.filter(id => !incomingEdgeIds.includes(id)) }
+        }
+      }
+
       const newRoot = state.app.dag.root === action.nodeId ? (Object.keys(newNodes)[0] ?? '') : state.app.dag.root
       const newPositions = { ...state.positions }
       delete newPositions[action.nodeId]
@@ -125,7 +137,7 @@ export function reducer(state: FullState, action: Action): FullState {
       const dag: DagData = {
         ...state.app.dag,
         nodes: { ...state.app.dag.nodes, [action.nodeId]: { ...node, answers: [...node.answers, edgeId] } },
-        edges: { ...state.app.dag.edges, [edgeId]: { id: edgeId, label: 'New answer', next: null, weights } },
+        edges: { ...state.app.dag.edges, [edgeId]: { id: edgeId, label: 'New answer', next: null, weights, actions: [] } },
       }
       return { ...state, app: { ...state.app, dag } }
     }
@@ -209,7 +221,7 @@ export function reducer(state: FullState, action: Action): FullState {
         edges: {
           ...state.app.dag.edges,
           [action.edgeId]: { ...edge, next: newNodeId },
-          [newEdgeId]: { id: newEdgeId, label: 'Continue', next: edge.next, weights },
+          [newEdgeId]: { id: newEdgeId, label: 'Continue', next: edge.next, weights, actions: [] },
         },
       }
 
@@ -283,6 +295,16 @@ export function reducer(state: FullState, action: Action): FullState {
 
     case 'DESELECT': {
       return { ...state, selection: { type: 'none' } }
+    }
+
+    case 'SET_EDGE_ACTIONS': {
+      const edge = state.app.dag.edges[action.edgeId]
+      if (!edge) return state
+      const dag: DagData = {
+        ...state.app.dag,
+        edges: { ...state.app.dag.edges, [action.edgeId]: { ...edge, actions: action.actions } },
+      }
+      return { ...state, app: { ...state.app, dag } }
     }
 
     case 'SET_VALIDATION': {

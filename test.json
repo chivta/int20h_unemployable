@@ -1,0 +1,139 @@
+{
+  "root": "start",
+  "nodes": {
+    "start": {
+      "id": "start",
+      "type": "question",
+      "content": "What is your main fitness goal?",
+      "edges": [
+        {
+          "match_value": "Lose weight",
+          "to_node_id": "q2",
+          "actions": [{ "type": "set", "field_name": "Goal", "value": "weight_loss" }]
+        },
+        {
+          "match_value": "Build strength",
+          "to_node_id": "q2",
+          "actions": [{ "type": "set", "field_name": "Goal", "value": "strength" }]
+        },
+        {
+          "match_value": "Reduce stress",
+          "to_node_id": "q2",
+          "actions": [{ "type": "set", "field_name": "Goal", "value": "stress_relief" }]
+        }
+      ]
+    },
+    "q2": {
+      "id": "q2",
+      "type": "question",
+      "content": "Where do you prefer to work out?",
+      "edges": [
+        {
+          "match_value": "At home",
+          "to_node_id": "q3",
+          "actions": [{ "type": "set", "field_name": "Context", "value": "home" }]
+        },
+        {
+          "match_value": "At the gym",
+          "to_node_id": "q3",
+          "actions": [{ "type": "set", "field_name": "Context", "value": "gym" }]
+        },
+        {
+          "match_value": "Outdoors",
+          "to_node_id": "q3",
+          "actions": [{ "type": "set", "field_name": "Context", "value": "outdoor" }]
+        }
+      ]
+    },
+    "q3": {
+      "id": "q3",
+      "type": "question",
+      "content": "Any physical constraints?",
+      "edges": [
+        {
+          "match_value": "I have an injury",
+          "to_node_id": "",
+          "actions": [{ "type": "set", "field_name": "Constraints", "value": "injury" }]
+        },
+        {
+          "match_value": "Limited time (under 20 min)",
+          "to_node_id": "",
+          "actions": [{ "type": "set", "field_name": "Constraints", "value": "time" }]
+        },
+        {
+          "match_value": "None",
+          "to_node_id": "",
+          "actions": [{ "type": "set", "field_name": "Constraints", "value": "none" }]
+        }
+      ]
+    }
+  },
+  "offers": {
+    "offer_1": {
+      "id": "offer_1",
+      "name": "Weight Loss Starter (Home)",
+      "description": "4-week home fat-burn plan. Includes resistance bands, jump rope, shaker, electrolytes.",
+      "requirements": [
+        { "field_name": "goal", "match_value": "weight_loss", "is_obligatory": true, "score": 10 },
+        { "field_name": "context", "match_value": "home", "is_obligatory": false, "score": 5 }
+      ]
+    },
+    "offer_2": {
+      "id": "offer_2",
+      "name": "Lean Strength Builder (Gym)",
+      "description": "Progressive gym strength program. Includes wrist wraps, loop band, towel, protein snack.",
+      "requirements": [
+        { "field_name": "goal", "match_value": "strength", "is_obligatory": true, "score": 10 },
+        { "field_name": "context", "match_value": "gym", "is_obligatory": false, "score": 5 }
+      ]
+    },
+    "offer_3": {
+      "id": "offer_3",
+      "name": "Low-Impact Fat Burn",
+      "description": "Joint-friendly low-impact plan. Includes knee sleeve, massage ball, loop bands, recovery gel.",
+      "requirements": [
+        { "field_name": "goal", "match_value": "weight_loss", "is_obligatory": false, "score": 5 },
+        { "field_name": "constraints", "match_value": "injury", "is_obligatory": true, "score": 10 }
+      ]
+    },
+    "offer_4": {
+      "id": "offer_4",
+      "name": "Run Your First 5K (Outdoor)",
+      "description": "3x/week beginner running plan. Includes electrolytes, reflective armband, running belt.",
+      "requirements": [
+        { "field_name": "goal", "match_value": "endurance", "is_obligatory": true, "score": 10 },
+        { "field_name": "context", "match_value": "outdoor", "is_obligatory": false, "score": 5 }
+      ]
+    },
+    "offer_5": {
+      "id": "offer_5",
+      "name": "Yoga & Mobility (Home)",
+      "description": "10-25 min daily yoga sessions. Includes yoga strap, massage ball, mini foam roller.",
+      "requirements": [
+        { "field_name": "goal", "match_value": "flexibility", "is_obligatory": true, "score": 10 },
+        { "field_name": "context", "match_value": "home", "is_obligatory": false, "score": 5 }
+      ]
+    },
+    "offer_6": {
+      "id": "offer_6",
+      "name": "Stress Reset Program",
+      "description": "Breathing, meditation & anti-stress routines. Includes eye mask, aroma roll-on, stress ball.",
+      "requirements": [
+        { "field_name": "goal", "match_value": "stress_relief", "is_obligatory": true, "score": 10 }
+      ]
+    },
+    "offer_7": {
+      "id": "offer_7",
+      "name": "Quick Fit Micro-Workouts",
+      "description": "10-15 min daily workouts for busy schedules. Includes slider discs, loop bands, routine card.",
+      "requirements": [
+        { "field_name": "constraints", "match_value": "time", "is_obligatory": true, "score": 10 }
+      ]
+    }
+  },
+  "layout": {
+    "start": { "x": 100, "y": 200 },
+    "q2": { "x": 400, "y": 200 },
+    "q3": { "x": 700, "y": 200 }
+  }
+}

@@ -4,11 +4,18 @@ export interface DagNode {
   answers: string[] // ordered array of edge IDs
 }
 
+export interface EdgeAction {
+  type: 'set'
+  fieldName: string
+  value: string | number
+}
+
 export interface DagEdge {
   id: string
   label: string
   next: string | null // target node ID, null = terminal
   weights: Record<string, number>
+  actions: EdgeAction[]
 }
 
 export interface DagData {
