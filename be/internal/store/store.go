@@ -10,19 +10,21 @@ import (
 
 // Store provides thread-safe in-memory storage for DAG nodes and user state.
 type Store struct {
-	mu        sync.RWMutex
-	nodes     map[string]models.Node
-	userState models.UserData
-	offers    map[string]models.Offer
+	mu         sync.RWMutex
+	nodes      map[string]models.Node
+	rootNodeID string
+	userState  models.UserData
+	offers     map[string]models.Offer
 }
 
-// New creates a Store with default user state and a pre-created empty "start" node.
+// New creates a Store with default user state.
 func New() *Store {
 	s := &Store{
 		nodes:     make(map[string]models.Node),
 		userState: models.UserData{Age: 0},
 		offers:    make(map[string]models.Offer),
 	}
+
 	// Pre-create the start node (empty, ready to be configured by admin)
 	s.nodes["start"] = models.Node{
 		ID:      "start",
@@ -32,6 +34,13 @@ func New() *Store {
 	}
 	
 	return s
+}
+
+// GetRootNodeID returns the current root node ID.
+func (s *Store) GetRootNodeID() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.rootNodeID
 }
 
 // SaveNode creates or updates a node in the DAG.
@@ -178,4 +187,33 @@ func (s *Store) ImportConfig(cfg models.Config) {
 	for k, v := range cfg.Offers {
 		s.offers[k] = v
 	}
+
+	// Set root: use explicit value from config, or auto-detect (node with no incoming edges)
+	if cfg.Root != "" {
+		s.rootNodeID = cfg.Root
+	} else {
+		s.rootNodeID = detectRoot(cfg.Nodes)
+	}
+}
+
+// detectRoot finds the node with no incoming edges (i.e. not a target of any edge).
+func detectRoot(nodes map[string]models.Node) string {
+	targets := make(map[string]bool)
+	for _, node := range nodes {
+		for _, edge := range node.Edges {
+			if edge.ToNodeID != "" {
+				targets[edge.ToNodeID] = true
+			}
+		}
+	}
+	for id := range nodes {
+		if !targets[id] {
+			return id
+		}
+	}
+	// Fallback: return any node id
+	for id := range nodes {
+		return id
+	}
+	return ""
 }
