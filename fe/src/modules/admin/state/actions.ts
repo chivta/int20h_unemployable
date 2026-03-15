@@ -17,6 +17,7 @@ export type Action =
   | { type: 'SET_ANSWER_WEIGHT'; edgeId: string; offerId: string; weight: number }
   | { type: 'ADD_OFFER'; name: string }
   | { type: 'UPDATE_OFFER_NAME'; offerId: string; name: string }
+  | { type: 'UPSERT_OFFER'; offer: import('../types/dag').Offer }
   | { type: 'DELETE_OFFER'; offerId: string }
   | { type: 'SET_NODE_POSITION'; nodeId: string; position: Position }
   | { type: 'RECOMPUTE_LAYOUT' }

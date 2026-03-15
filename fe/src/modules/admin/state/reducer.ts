@@ -295,6 +295,14 @@ export function reducer(state: FullState, action: Action): FullState {
       }
     }
 
+    case 'UPSERT_OFFER': {
+      return {
+        ...state,
+        isDirty: true,
+        app: { ...state.app, offers: { ...state.app.offers, [action.offer.id]: action.offer } },
+      }
+    }
+
     case 'DELETE_OFFER': {
       const newOffers = { ...state.app.offers }
       delete newOffers[action.offerId]

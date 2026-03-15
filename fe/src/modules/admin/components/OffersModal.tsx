@@ -1,22 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Trash2, Plus, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Trash2, Plus, X } from 'lucide-react'
 import { Button } from '../../../shared/components/Button'
+import { useAppContext } from '../state/context'
+import type { Offer, OfferRequirement } from '../types/dag'
 
 const API_URL = import.meta.env.VITE_API_URL ?? ''
-
-interface Requirement {
-  field_name: string
-  match_value: string
-  is_obligatory: boolean
-  score: number
-}
-
-interface Offer {
-  id: string
-  name: string
-  description: string
-  requirements: Requirement[]
-}
 
 type FieldSchema = Record<string, { type: string; options?: string[] }>
 
@@ -24,7 +12,7 @@ function emptyOffer(): Offer {
   return { id: '', name: '', description: '', requirements: [] }
 }
 
-function emptyReq(): Requirement {
+function emptyReq(): OfferRequirement {
   return { field_name: '', match_value: '', is_obligatory: false, score: 5 }
 }
 
@@ -43,20 +31,21 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
     onChange({ ...offer, [k]: v })
   }
 
-  function setReq(i: number, r: Requirement) {
-    const reqs = offer.requirements.map((x, j) => (j === i ? r : x))
+  function setReq(i: number, r: OfferRequirement) {
+    const reqs = (offer.requirements ?? []).map((x, j) => (j === i ? r : x))
     onChange({ ...offer, requirements: reqs })
   }
 
   function addReq() {
-    onChange({ ...offer, requirements: [...offer.requirements, emptyReq()] })
+    onChange({ ...offer, requirements: [...(offer.requirements ?? []), emptyReq()] })
   }
 
   function removeReq(i: number) {
-    onChange({ ...offer, requirements: offer.requirements.filter((_, j) => j !== i) })
+    onChange({ ...offer, requirements: (offer.requirements ?? []).filter((_, j) => j !== i) })
   }
 
   const fieldNames = Object.keys(schema)
+  const requirements = offer.requirements ?? []
 
   return (
     <div className="flex flex-col gap-4">
@@ -87,7 +76,7 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
         <textarea
           className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           rows={3}
-          value={offer.description}
+          value={offer.description ?? ''}
           onChange={e => setField('description', e.target.value)}
           placeholder="Describe this offer…"
         />
@@ -96,21 +85,17 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-gray-600">Requirements</span>
-          <button
-            onClick={addReq}
-            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
-          >
+          <button onClick={addReq} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
             <Plus size={12} /> Add
           </button>
         </div>
 
-        {offer.requirements.length === 0 && (
+        {requirements.length === 0 && (
           <p className="text-xs text-gray-400 italic">No requirements — offer always matches.</p>
         )}
 
         <div className="flex flex-col gap-2">
-          {offer.requirements.map((req, i) => {
-            const fieldOpts = fieldNames
+          {requirements.map((req, i) => {
             const valueOpts = schema[req.field_name]?.options ?? []
             return (
               <div key={i} className="rounded border border-gray-200 bg-gray-50 p-3 grid grid-cols-[1fr_1fr_80px_60px_28px] gap-2 items-center">
@@ -120,7 +105,7 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
                   onChange={e => setReq(i, { ...req, field_name: e.target.value, match_value: '' })}
                 >
                   <option value="">Field…</option>
-                  {fieldOpts.map(f => <option key={f} value={f}>{f}</option>)}
+                  {fieldNames.map(f => <option key={f} value={f}>{f}</option>)}
                 </select>
 
                 {valueOpts.length > 0 ? (
@@ -141,15 +126,13 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
                   />
                 )}
 
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={req.score}
-                    min={0}
-                    onChange={e => setReq(i, { ...req, score: Number(e.target.value) })}
-                  />
-                </div>
+                <input
+                  type="number"
+                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={req.score}
+                  min={0}
+                  onChange={e => setReq(i, { ...req, score: Number(e.target.value) })}
+                />
 
                 <label className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer select-none justify-center">
                   <input
@@ -168,7 +151,7 @@ function OfferForm({ offer, schema, onChange, onSave, onCancel, isNew, saving }:
             )
           })}
         </div>
-        {offer.requirements.length > 0 && (
+        {requirements.length > 0 && (
           <p className="mt-1 text-xs text-gray-400">Columns: Field · Value · Score · Required · Delete</p>
         )}
       </div>
@@ -188,31 +171,26 @@ interface Props {
 }
 
 export function OffersModal({ onClose }: Props) {
-  const [offers, setOffers] = useState<Offer[]>([])
+  const { state, dispatch } = useAppContext()
+  const offers = Object.values(state.app.offers)
+
   const [schema, setSchema] = useState<FieldSchema>({})
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [editing, setEditing] = useState<Offer | null>(null)
   const [isNew, setIsNew] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [expanded, setExpanded] = useState<string | null>(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${API_URL}/api/admin/offers`).then(r => r.json()),
-      fetch(`${API_URL}/api/admin/field-schema`).then(r => r.json()),
-    ])
-      .then(([offersData, schemaData]) => {
-        setOffers(Array.isArray(offersData) ? offersData : [])
-        setSchema(schemaData ?? {})
-      })
-      .catch(() => setError('Failed to load offers'))
-      .finally(() => setLoading(false))
+    fetch(`${API_URL}/api/admin/field-schema`)
+      .then(r => r.json())
+      .then(data => setSchema(data ?? {}))
+      .catch(() => {})
   }, [])
 
   async function handleSave() {
     if (!editing) return
     setSaving(true)
+    setError('')
     try {
       const res = await fetch(`${API_URL}/api/admin/offers`, {
         method: 'POST',
@@ -220,11 +198,7 @@ export function OffersModal({ onClose }: Props) {
         body: JSON.stringify(editing),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setOffers(prev =>
-        isNew
-          ? [...prev, editing]
-          : prev.map(o => (o.id === editing.id ? editing : o))
-      )
+      dispatch({ type: 'UPSERT_OFFER', offer: editing })
       setEditing(null)
     } catch (e) {
       setError(`Save failed: ${(e as Error).message}`)
@@ -238,7 +212,7 @@ export function OffersModal({ onClose }: Props) {
     try {
       const res = await fetch(`${API_URL}/api/admin/offers?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setOffers(prev => prev.filter(o => o.id !== id))
+      dispatch({ type: 'DELETE_OFFER', offerId: id })
       if (editing?.id === id) setEditing(null)
     } catch (e) {
       setError(`Delete failed: ${(e as Error).message}`)
@@ -248,18 +222,17 @@ export function OffersModal({ onClose }: Props) {
   function startNew() {
     setEditing(emptyOffer())
     setIsNew(true)
+    setError('')
   }
 
   function startEdit(offer: Offer) {
     setEditing({ ...offer, requirements: offer.requirements ? [...offer.requirements] : [] })
     setIsNew(false)
+    setError('')
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         className="bg-white rounded-xl shadow-2xl w-[900px] max-h-[88vh] flex overflow-hidden"
         onClick={e => e.stopPropagation()}
@@ -274,8 +247,7 @@ export function OffersModal({ onClose }: Props) {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {loading && <p className="p-4 text-xs text-gray-400">Loading…</p>}
-            {!loading && offers.length === 0 && (
+            {offers.length === 0 && (
               <p className="p-4 text-xs text-gray-400 italic">No offers yet.</p>
             )}
             {offers.map(offer => (
@@ -291,8 +263,8 @@ export function OffersModal({ onClose }: Props) {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{offer.name || offer.id}</p>
                     <p className="text-xs text-gray-400">{offer.id}</p>
-                    {offer.requirements?.length > 0 && (
-                      <p className="text-xs text-gray-400">{offer.requirements.length} req{offer.requirements.length !== 1 ? 's' : ''}</p>
+                    {(offer.requirements?.length ?? 0) > 0 && (
+                      <p className="text-xs text-gray-400">{offer.requirements!.length} req{offer.requirements!.length !== 1 ? 's' : ''}</p>
                     )}
                   </div>
                   <button
