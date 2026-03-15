@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../../shared/components/Button'
 import type { BackendConfig } from '../admin/utils/apiTransform'
+import initConfig from '../../../init.json'
 
 const API_URL = import.meta.env.VITE_API_URL ?? ''
 
@@ -150,8 +151,9 @@ function scoreOffers(
 
   results.sort((a, b) => b.Score - a.Score)
 
-  const qualifying = results.filter(r => r.Score > 0)
-  return qualifying.length > 0 ? qualifying : results
+  const nonNegative = results.filter(r => r.Score >= 0)
+  const qualifying = nonNegative.filter(r => r.Score > 0)
+  return qualifying.length > 0 ? qualifying : nonNegative
 }
 
 // ---------------------------------------------------------------------------
@@ -354,7 +356,7 @@ function useTestQuiz(localConfig: BackendConfig) {
         const recRes = await fetch(`${API_URL}/api/user/test/recommendations?session_id=${sessionId}`)
         if (!recRes.ok) throw new Error(`HTTP ${recRes.status}`)
         const recData = await recRes.json()
-        setResults(mapBackendResults(recData.results ?? []))
+        setResults(mapBackendResults(recData.results ?? []).filter(r => r.Score >= 0))
         setPhase('results')
       } else {
         setNode(data.node)
@@ -404,7 +406,7 @@ function useTestQuiz(localConfig: BackendConfig) {
         const recRes = await fetch(`${API_URL}/api/user/test/recommendations?session_id=${sessionId}`)
         if (!recRes.ok) throw new Error(`HTTP ${recRes.status}`)
         const recData = await recRes.json()
-        setResults(mapBackendResults(recData.results ?? []))
+        setResults(mapBackendResults(recData.results ?? []).filter(r => r.Score >= 0))
         setPhase('results')
       } else {
         setNode(lastData.node as BackendNode)
@@ -492,7 +494,7 @@ function useServerQuiz() {
         const recRes = await fetch(`${API_URL}/api/user/recommendations?session_id=${sessionId}`)
         if (!recRes.ok) throw new Error(`HTTP ${recRes.status}`)
         const recData = await recRes.json()
-        setResults(mapBackendResults(recData.results ?? []))
+        setResults(mapBackendResults(recData.results ?? []).filter(r => r.Score >= 0))
         setPhase('results')
       } else {
         setNode(data.node)
@@ -525,7 +527,7 @@ function ErrorScreen({ error, onRetry, isLocal }: { error: string; onRetry: () =
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center space-y-4">
         {isLocal && (
-          <p className="text-xs text-blue-500 font-medium uppercase tracking-wide">Local test mode</p>
+          <p className="text-xs text-blue-500 font-medium uppercase tracking-wide">Take a quiz</p>
         )}
         <p className="text-sm text-red-600">{error}</p>
         <Button onClick={onRetry}>Try again</Button>
@@ -540,7 +542,7 @@ function ResultsScreen({ results, onRestart, isLocal }: { results: OfferResult[]
       <div className="w-full max-w-lg space-y-4">
         <h1 className="text-2xl font-bold text-gray-900 text-center">Your Recommendations</h1>
         {isLocal && (
-          <p className="text-xs text-blue-500 font-medium text-center uppercase tracking-wide">Local test mode</p>
+          <p className="text-xs text-blue-500 font-medium text-center uppercase tracking-wide">Take a quiz</p>
         )}
         <p className="text-sm text-gray-500 text-center mb-2">
           Based on your answers, here are the best matching offers.
@@ -566,23 +568,18 @@ function ResultsScreen({ results, onRestart, isLocal }: { results: OfferResult[]
               )}
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-base font-semibold text-gray-800">{offer.Name}</h2>
-                <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-                  Score {offer.Score}
-                </span>
               </div>
               {offer.Description && (
                 <p className="mt-1 text-sm text-gray-600">{offer.Description}</p>
               )}
-              {offer.URL && (
-                <a
-                  href={offer.URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
-                >
-                  Buy now →
-                </a>
-              )}
+              <a
+                href={offer.URL || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+              >
+                Buy now →
+              </a>
             </div>
           ))
         )}
@@ -635,7 +632,7 @@ function QuizScreen({
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-lg space-y-5">
         {isLocal && (
-          <p className="text-xs text-blue-500 font-medium text-center uppercase tracking-wide">Local test mode</p>
+          <p className="text-xs text-blue-500 font-medium text-center uppercase tracking-wide">Take a quiz</p>
         )}
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
           {isMulti && (
@@ -842,7 +839,6 @@ function LocalQuizPage({ localConfig }: { localConfig: BackendConfig }) {
     return (
       <>
         {backButton}
-        <UserDataPanel userData={userData} scores={scores} offers={localConfig.offers} />
         <ResultsScreen results={results} onRestart={startQuiz} isLocal />
       </>
     )
@@ -851,7 +847,6 @@ function LocalQuizPage({ localConfig }: { localConfig: BackendConfig }) {
   return (
     <>
       {backButton}
-      <UserDataPanel userData={userData} scores={scores} offers={localConfig.offers} />
       <QuizScreen node={node} onAnswer={handleAnswer} onMultiAnswer={handleMultiAnswer} onRestart={startQuiz} isLocal />
     </>
   )
@@ -1039,16 +1034,14 @@ function ProductionResultsScreen({ results, onRestart }: { results: OfferResult[
                   {top.Description && (
                     <p className="text-sm text-indigo-100 leading-relaxed whitespace-pre-line">{top.Description}</p>
                   )}
-                  {top.URL && (
-                    <a
-                      href={top.URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-5 block w-full rounded-xl bg-white text-indigo-700 py-3 text-sm font-bold text-center hover:bg-indigo-50 transition-colors active:scale-[0.98]"
-                    >
-                      Buy now →
-                    </a>
-                  )}
+                  <a
+                    href={top.URL || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 block w-full rounded-xl bg-white text-indigo-700 py-3 text-sm font-bold text-center hover:bg-indigo-50 transition-colors active:scale-[0.98]"
+                  >
+                    Buy now →
+                  </a>
                 </div>
               )}
 
@@ -1062,16 +1055,14 @@ function ProductionResultsScreen({ results, onRestart }: { results: OfferResult[
                       {offer.Description && (
                         <p className="mt-1 text-xs text-gray-500 leading-relaxed whitespace-pre-line">{offer.Description}</p>
                       )}
-                      {offer.URL && (
-                        <a
-                          href={offer.URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-3 inline-block rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
-                        >
-                          Buy now →
-                        </a>
-                      )}
+                      <a
+                        href={offer.URL || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-block rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                      >
+                        Buy now →
+                      </a>
                     </div>
                   ))}
                 </div>
@@ -1119,13 +1110,5 @@ function ServerQuizPage() {
 // ---------------------------------------------------------------------------
 
 export function QuizPage() {
-  const location = useLocation()
-  const state = location.state as { localConfig?: BackendConfig } | undefined
-  const localConfig = state?.localConfig
-
-  if (localConfig) {
-    return <LocalQuizPage localConfig={localConfig} />
-  }
-
-  return <ServerQuizPage />
+  return <LocalQuizPage localConfig={initConfig as BackendConfig} />
 }

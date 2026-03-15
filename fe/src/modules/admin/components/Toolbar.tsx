@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { FileJson, Save, Play, ClipboardPaste, Tag, Loader2, Copy, Check } from 'lucide-react'
+import { FileJson, Save, Play, ClipboardPaste, Tag, Loader2, Copy, Check, ExternalLink } from 'lucide-react'
 import { useNavigate, useBlocker } from '@tanstack/react-router'
 import { useAppContext } from '../state/context'
 import { Button } from '../../../shared/components/Button'
@@ -81,7 +81,6 @@ export function Toolbar() {
     async function init() {
       if (initialLoadDoneRef.current) return
       initialLoadDoneRef.current = true
-      if (Object.keys(state.app.dag.nodes).length > 0) return
       let loadedFromBackend = false
       try {
         const r = await fetch(`${API_URL}/api/admin/config/versions`)
@@ -256,6 +255,19 @@ export function Toolbar() {
         {statusMsg && (
           <span className="ml-2 text-xs text-gray-500 italic">{statusMsg}</span>
         )}
+
+        <div className="ml-auto">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              skipBlockerRef.current = true
+              navigate({ to: '/quiz' })
+            }}
+          >
+            <ExternalLink size={14} /> User Quiz
+          </Button>
+        </div>
       </div>
 
       {showPaste && (

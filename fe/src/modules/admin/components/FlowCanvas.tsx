@@ -65,11 +65,11 @@ function ContextMenu({
     <div
       ref={ref}
       style={{ top: menu.y, left: menu.x }}
-      className="absolute z-50 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[160px]"
+      className="absolute z-50 bg-white border border-slate-200 rounded-md shadow-md py-0.5 min-w-0 w-max"
     >
       {menu.kind === 'node' && (
         <button
-          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+          className="w-full text-left px-3 py-1 text-xs text-red-600 hover:bg-red-50 transition-colors"
           onClick={() => { onRemoveNode(menu.nodeId); onClose() }}
         >
           Remove node
@@ -79,7 +79,7 @@ function ContextMenu({
       {menu.kind === 'edge' && (
         <>
           <button
-            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            className="w-full text-left px-3 py-1 text-xs text-red-600 hover:bg-red-50 transition-colors"
             onClick={() => { onRemoveEdge(menu.edgeId); onClose() }}
           >
             Remove edge
@@ -90,19 +90,19 @@ function ContextMenu({
       {menu.kind === 'pane' && (
         <>
           <button
-            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            className="w-full text-left px-3 py-1 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
             onClick={() => { onAddNode(menu.flowX, menu.flowY); onClose() }}
           >
             Add question node
           </button>
           <button
-            className="w-full text-left px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 transition-colors"
+            className="w-full text-left px-3 py-1 text-xs text-amber-700 hover:bg-amber-50 transition-colors"
             onClick={() => { onAddInfoNode(menu.flowX, menu.flowY); onClose() }}
           >
             Add info node
           </button>
           <button
-            className="w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
+            className="w-full text-left px-3 py-1 text-xs text-green-700 hover:bg-green-50 transition-colors"
             onClick={() => { onAddFinishNode(menu.flowX, menu.flowY); onClose() }}
           >
             Add finish node
